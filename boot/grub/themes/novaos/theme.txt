@@ -1,0 +1,47 @@
+# NovaOS GRUB theme
+title-text: ""
+desktop-image: "background.png"
+desktop-image-scale-method: "crop"
+desktop-color: "#07090f"
+terminal-font: "Inter Regular 16"
+terminal-box: "select_*.png"
+
++ boot_menu {
+	left = 50%-300
+	top = 56%
+	width = 600
+	height = 250
+	item_font = "Inter Regular 20"
+	item_color = "#9aa3c7"
+	selected_item_color = "#ffffff"
+	selected_item_font = "Inter Regular 20"
+	item_height = 44
+	item_padding = 18
+	item_spacing = 6
+	icon_width = 0
+	icon_height = 0
+	item_icon_space = 0
+	selected_item_pixmap_style = "select_*.png"
+	scrollbar = false
+}
+
++ label {
+	left = 0
+	top = 100%-56
+	width = 100%
+	align = "center"
+	id = "__timeout__"
+	text = "Starting NovaOS in %d seconds"
+	color = "#6b7399"
+	font = "Inter Regular 16"
+}
+
++ label {
+	left = 0
+	top = 100%-32
+	width = 100%
+	align = "center"
+	text = "Use the arrow keys to choose, Enter to boot, E to edit"
+	color = "#444b6b"
+	font = "Inter Regular 14"
+}

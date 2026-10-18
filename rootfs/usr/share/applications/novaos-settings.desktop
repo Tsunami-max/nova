@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+GenericName=NovaOS Settings
+Comment=Personalize NovaOS: theme, accent colour, wallpaper, display, keyboard and more
+Exec=nova-settings
+Icon=novaos-settings
+Categories=Settings;System;GTK;
+Keywords=settings;preferences;theme;dark;light;accent;wallpaper;display;resolution;keyboard;
+StartupNotify=true

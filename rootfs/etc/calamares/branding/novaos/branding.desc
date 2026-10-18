@@ -1,0 +1,36 @@
+---
+componentName:  novaos
+welcomeStyleCalamares:   false
+welcomeExpandingLogo:   true
+windowExpanding:    normal
+windowSize: 960px,640px
+windowPlacement: center
+sidebar: widget
+navigation: widget
+strings:
+    productName:         "NovaOS"
+    shortProductName:    "NovaOS"
+    version:             "1.0"
+    shortVersion:        "1.0"
+    versionedName:       "NovaOS 1.0"
+    shortVersionedName:  "NovaOS 1.0"
+    bootloaderEntryName: "NovaOS"
+    productUrl:          ""
+    supportUrl:          ""
+    knownIssuesUrl:      ""
+    releaseNotesUrl:     ""
+    donateUrl:           ""
+images:
+    productIcon:         "logo.png"
+    productLogo:         "logo.png"
+    productWelcome:      "welcome.png"
+style:
+   SidebarBackground:        "#10142a"
+   SidebarText:              "#e6e9f2"
+   SidebarTextCurrent:       "#ffffff"
+   SidebarBackgroundCurrent: "#6c7bff"
+slideshow:
+    - "slide1.png"
+    - "slide2.png"
+    - "slide3.png"
+slideshowAPI: 1

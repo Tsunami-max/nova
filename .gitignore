@@ -1,0 +1,5 @@
+work/
+out/
+*.log
+__pycache__/
+*.qcow2

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="bg" x1="64" y1="8" x2="64" y2="120" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fb7185"/><stop offset="1" stop-color="#e11d48"/>
+  </linearGradient>
+  <linearGradient id="gloss" x1="64" y1="8" x2="64" y2="70" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="#000" opacity="0.22" transform="translate(0 3)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#bg)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#gloss)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="1.5"/>
+<g transform="translate(0 2)" opacity="0.18">
+  <path d="M24 68 H44 L52 48 L64 86 L74 58 L80 68 H104" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <path d="M24 68 H44 L52 48 L64 86 L74 58 L80 68 H104" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

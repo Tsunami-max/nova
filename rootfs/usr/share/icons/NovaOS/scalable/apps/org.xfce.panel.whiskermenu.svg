@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="novaStar" x1="20" y1="10" x2="108" y2="118" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#5ee7ff"/>
+    <stop offset="0.45" stop-color="#6d7bff"/>
+    <stop offset="1" stop-color="#b44dff"/>
+  </linearGradient>
+  <linearGradient id="novaOrbit" x1="10" y1="64" x2="118" y2="64" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#7ee8ff"/>
+    <stop offset="1" stop-color="#d07bff"/>
+  </linearGradient>
+</defs>
+  <g transform="rotate(-24 64 64)">
+    <path d="M10 64 A54 17 0 0 1 118 64" fill="none" stroke="url(#novaOrbit)" stroke-width="4.5" stroke-linecap="round" opacity="0.55"/>
+  </g>
+  <path d="M64 6 C67.5 44 76 56.5 112 64 C76 71.5 67.5 84 64 122 C60.5 84 52 71.5 16 64 C52 56.5 60.5 44 64 6 Z" fill="url(#novaStar)"/>
+  <path d="M64 6 C67.5 44 76 56.5 112 64 C76 71.5 67.5 84 64 122 C60.5 84 52 71.5 16 64 C52 56.5 60.5 44 64 6 Z" fill="#fff" opacity="0.18" transform="translate(64 64) scale(0.42) translate(-64 -64)"/>
+  <g transform="rotate(-24 64 64)">
+    <path d="M118 64 A54 17 0 0 1 10 64" fill="none" stroke="url(#novaOrbit)" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+  <path d="M100 14 C101 23 103 25 112 26 C103 27 101 29 100 38 C99 29 97 27 88 26 C97 25 99 23 100 14 Z" fill="#ffffff" opacity="0.9"/>
+</svg>

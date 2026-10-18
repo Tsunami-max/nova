@@ -1,0 +1,7 @@
+// Live session only: the "nova" live user may perform admin actions without a
+// password (same as sudo in the live session). The installer deletes this file.
+polkit.addRule(function(action, subject) {
+    if (subject.user == "nova" && subject.local && subject.active && subject.isInGroup("sudo")) {
+        return polkit.Result.YES;
+    }
+});

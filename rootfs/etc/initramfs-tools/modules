@@ -1,0 +1,54 @@
+# Drivers needed to boot NovaOS in virtual machines (QEMU/UTM, VirtualBox,
+# VMware, Hyper-V) and on common real hardware storage controllers.
+# --- virtio (QEMU/UTM) ---
+virtio_pci
+virtio_mmio
+virtio_blk
+virtio_scsi
+virtio_net
+virtio_gpu
+virtio_console
+# --- disks / CD ---
+ahci
+ata_piix
+ata_generic
+pata_acpi
+sd_mod
+sr_mod
+cdrom
+nvme
+mptspi
+vmw_pvscsi
+hv_storvsc
+hv_vmbus
+# --- USB (boot from USB stick, keyboard) ---
+xhci_pci
+ehci_pci
+uhci_hcd
+ohci_pci
+usb_storage
+uas
+usbhid
+hid_generic
+# --- filesystems ---
+squashfs
+overlay
+isofs
+iso9660
+loop
+ext4
+btrfs
+xfs
+vfat
+nls_cp437
+nls_iso8859_1
+nls_utf8
+efivarfs
+dm_mod
+dm_crypt
+# --- graphics for the boot splash ---
+bochs
+qxl
+vmwgfx
+hyperv_drm
+drm_kms_helper

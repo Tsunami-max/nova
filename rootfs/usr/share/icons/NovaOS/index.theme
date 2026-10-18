@@ -1,0 +1,20 @@
+[Icon Theme]
+Name=NovaOS
+Comment=Original NovaOS icons (apps, places); everything else from Papirus
+Inherits=Papirus,Adwaita,hicolor
+Example=folder
+Directories=scalable/apps,scalable/places
+
+[scalable/apps]
+Size=128
+MinSize=8
+MaxSize=512
+Context=Applications
+Type=Scalable
+
+[scalable/places]
+Size=128
+MinSize=8
+MaxSize=512
+Context=Places
+Type=Scalable

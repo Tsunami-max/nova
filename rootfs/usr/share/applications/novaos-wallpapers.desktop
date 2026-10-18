@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Wallpapers
+Comment=Choose your desktop wallpaper
+Exec=nova-settings --page personalization
+Icon=novaos-wallpapers
+Categories=Settings;DesktopSettings;GTK;
+Keywords=wallpaper;background;desktop;picture;
+StartupNotify=true

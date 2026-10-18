@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Notes
+Comment=Write and organise quick notes
+Exec=nova-notes
+Icon=novaos-notes
+Categories=Utility;Office;GTK;
+Keywords=notes;memo;text;todo;
+StartupNotify=true

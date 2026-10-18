@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install NovaOS
+Comment=Install NovaOS on this (virtual) computer's disk
+Exec=novaos-install
+TryExec=calamares
+Icon=novaos-installer
+Categories=System;
+Terminal=false

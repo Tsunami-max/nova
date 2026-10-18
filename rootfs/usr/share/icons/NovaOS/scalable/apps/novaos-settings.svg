@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="bg" x1="64" y1="8" x2="64" y2="120" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#7b8798"/><stop offset="1" stop-color="#3a4354"/>
+  </linearGradient>
+  <linearGradient id="gloss" x1="64" y1="8" x2="64" y2="70" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="#000" opacity="0.22" transform="translate(0 3)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#bg)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#gloss)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="1.5"/>
+<g transform="translate(0 2)" opacity="0.18"><path fill="#000" fill-rule="evenodd" d="M64.00 28.00 L71.02 28.69 L74.72 38.13 L79.56 40.72 L89.46 38.54 L93.93 44.00 L89.87 53.28 L91.46 58.54 L100.00 64.00 L99.31 71.02 L89.87 74.72 L87.28 79.56 L89.46 89.46 L84.00 93.93 L74.72 89.87 L69.46 91.46 L64.00 100.00 L56.98 99.31 L53.28 89.87 L48.44 87.28 L38.54 89.46 L34.07 84.00 L38.13 74.72 L36.54 69.46 L28.00 64.00 L28.69 56.98 L38.13 53.28 L40.72 48.44 L38.54 38.54 L44.00 34.07 L53.28 38.13 L58.54 36.54 Z M76 64 A12 12 0 1 0 52 64 A12 12 0 1 0 76 64 Z"/></g><path fill="#ffffff" fill-rule="evenodd" d="M64.00 28.00 L71.02 28.69 L74.72 38.13 L79.56 40.72 L89.46 38.54 L93.93 44.00 L89.87 53.28 L91.46 58.54 L100.00 64.00 L99.31 71.02 L89.87 74.72 L87.28 79.56 L89.46 89.46 L84.00 93.93 L74.72 89.87 L69.46 91.46 L64.00 100.00 L56.98 99.31 L53.28 89.87 L48.44 87.28 L38.54 89.46 L34.07 84.00 L38.13 74.72 L36.54 69.46 L28.00 64.00 L28.69 56.98 L38.13 53.28 L40.72 48.44 L38.54 38.54 L44.00 34.07 L53.28 38.13 L58.54 36.54 Z M76 64 A12 12 0 1 0 52 64 A12 12 0 1 0 76 64 Z"/>
+</svg>

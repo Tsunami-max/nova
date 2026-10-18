@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs>
+  <linearGradient id="bg" x1="64" y1="8" x2="64" y2="120" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#5b4cf0"/>
+  </linearGradient>
+  <linearGradient id="gloss" x1="64" y1="8" x2="64" y2="70" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </linearGradient>
+</defs>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="#000" opacity="0.22" transform="translate(0 3)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#bg)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="url(#gloss)"/>
+  <path d="M64 8 C104 8 120 24 120 64 C120 104 104 120 64 120 C24 120 8 104 8 64 C8 24 24 8 64 8 Z" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="1.5"/>
+<g transform="translate(0 2)" opacity="0.18">
+  <rect fill="#000" opacity="0.55" x="32" y="30" width="62" height="48" rx="8" transform="rotate(-10 63 54)"/>
+  <rect fill="#000" x="34" y="46" width="64" height="50" rx="8"/>
+  <path d="M40 90 L58 68 L70 80 L78 72 L92 90 Z" fill="#7c3aed"/>
+  <circle cx="82" cy="60" r="6" fill="#38bdf8"/></g>
+  <rect fill="#ffffff" opacity="0.55" x="32" y="30" width="62" height="48" rx="8" transform="rotate(-10 63 54)"/>
+  <rect fill="#ffffff" x="34" y="46" width="64" height="50" rx="8"/>
+  <path d="M40 90 L58 68 L70 80 L78 72 L92 90 Z" fill="#7c3aed"/>
+  <circle cx="82" cy="60" r="6" fill="#38bdf8"/>
+</svg>
