@@ -107,12 +107,25 @@ for a in $BROWSER_DESKTOP xfce4-terminal.desktop; do
 	[ -f "/usr/local/share/applications/$a" ] && cp "/usr/local/share/applications/$a" /usr/share/novaos/desktop/
 done
 # Make it the default browser everywhere (panel launcher, links, xdg-open).
-case "$BROWSER_DESKTOP" in
-	chromium*) EXO_HELPER=chromium ;;
-	*) EXO_HELPER=epiphany ;;
-esac
-mkdir -p /etc/xdg/xfce4
-printf 'WebBrowser=%s\n' "$EXO_HELPER" > /etc/xdg/xfce4/helpers.rc
+# A NovaOS-specific helper so "Web Browser" never asks which app to use.
+BROWSER_BIN="$(command -v chromium || command -v chromium-browser || command -v epiphany || true)"
+mkdir -p /etc/xdg/xfce4 /usr/share/xfce4/helpers
+if [ -n "$BROWSER_BIN" ]; then
+	cat > /usr/share/xfce4/helpers/novaos-browser.desktop <<EOH
+[Desktop Entry]
+NoDisplay=true
+Version=1.0
+Encoding=UTF-8
+Type=X-XFCE-Helper
+X-XFCE-Category=WebBrowser
+X-XFCE-CommandsWithParameter=$BROWSER_BIN "%s"
+Icon=novaos-browser
+Name=NovaOS Web Browser
+X-XFCE-Commands=$BROWSER_BIN
+X-XFCE-Binaries=$(basename "$BROWSER_BIN");
+EOH
+	printf 'WebBrowser=novaos-browser\n' > /etc/xdg/xfce4/helpers.rc
+fi
 if [ -n "$BROWSER_DESKTOP" ]; then
 	cat > /etc/xdg/mimeapps.list <<EOM
 [Default Applications]

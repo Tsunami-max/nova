@@ -9,7 +9,11 @@ ACTION="$(sed -n 's/.*novaos\.selftest=\([a-z]*\).*/\1/p' /proc/cmdline)"
 LOG="$HOME/novaos-selftest.log"
 
 say() {
-	echo "SELFTEST: $*" | tee -a "$LOG" | sudo -n tee /dev/ttyS0 >/dev/null 2>&1 || true
+	echo "SELFTEST: $*" >> "$LOG"
+	for t in /dev/ttyS0 /dev/ttyAMA0; do
+		[ -e "$t" ] && echo "SELFTEST: $*" | sudo -n tee "$t" >/dev/null 2>&1
+	done
+	true
 }
 
 # wait for the desktop to be fully up
