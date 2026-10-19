@@ -25,7 +25,20 @@ DEFAULTS = {
     "taskbar_size": 36,
     "clock_24h": True,
     "resolution": None,             # None = automatic, else "1920x1080"
+    "refresh": None,                # None = highest available, else "144.00"
+    "scale": None,                  # None = automatic, else 100/125/150/175/200
+    "font_size": 10,
+    "buttons": "right",             # right (Windows) | left (macOS)
+    "desktop_icon_size": 56,
+    "taskbar_position": "top",      # top | bottom
+    "dock_apps": None,              # None = defaults
+    "dock_position": "bottom",      # bottom | left | right
+    "dock_icon_size": 48,
+    "dock_autohide": "never",       # never | smart | always
 }
+
+DEFAULT_DOCK = ["thunar.desktop", "@browser", "xfce4-terminal.desktop", "novaos-notes.desktop",
+                "org.gnome.Calculator.desktop", "novaos-settings.desktop", "xfce4-appfinder.desktop"]
 
 
 def load():
@@ -213,7 +226,8 @@ def apply_effects(s):
 # display
 # ---------------------------------------------------------------------------
 def outputs():
-    """Return {output: {"modes": [...], "current": "WxH"}} for connected outputs."""
+    """Return {output: {"modes": [...], "rates": {mode: [rates]}, "current": "WxH",
+    "rate": "60.00"}} for connected outputs."""
     r = run("xrandr", "--query")
     res, cur = {}, None
     if not r or r.returncode != 0:
@@ -221,33 +235,204 @@ def outputs():
     for line in r.stdout.splitlines():
         if " connected" in line:
             cur = line.split()[0]
-            res[cur] = {"modes": [], "current": None}
+            res[cur] = {"modes": [], "rates": {}, "current": None, "rate": None}
         elif cur and line.startswith("   "):
             parts = line.split()
             mode = parts[0]
             if mode not in res[cur]["modes"]:
                 res[cur]["modes"].append(mode)
-            if "*" in line:
-                res[cur]["current"] = mode
+                res[cur]["rates"][mode] = []
+            for tok in parts[1:]:
+                rate = tok.rstrip("*+")
+                try:
+                    float(rate)
+                except ValueError:
+                    continue
+                if rate not in res[cur]["rates"][mode]:
+                    res[cur]["rates"][mode].append(rate)
+                if "*" in tok:
+                    res[cur]["current"] = mode
+                    res[cur]["rate"] = rate
         elif not line.startswith(" "):
             cur = None
     return res
 
 
-def apply_resolution(s):
-    mode = s.get("resolution")
-    if not mode:
-        return True
+def primary_output():
     outs = outputs()
-    ok = True
     for name, info in outs.items():
-        if mode in info["modes"]:
-            r = run("xrandr", "--output", name, "--mode", mode)
-            ok = ok and bool(r and r.returncode == 0)
-            break
+        return name, info
+    return None, None
+
+
+def apply_resolution(s):
+    """Set resolution (or keep the current one) at the chosen or highest refresh rate."""
+    name, info = primary_output()
+    if not name:
+        return False
+    mode = s.get("resolution") or info["current"]
+    if mode not in info["modes"]:
+        return False
+    rates = info["rates"].get(mode) or []
+    want = s.get("refresh")
+    if want not in rates:
+        want = max(rates, key=float) if rates else None
+    args = ["xrandr", "--output", name, "--mode", mode]
+    if want:
+        args += ["--rate", want]
+    if mode == info["current"] and want == info["rate"]:
+        return True
+    r = run(*args)
+    return bool(r and r.returncode == 0)
+
+
+def auto_scale():
+    """Pick a sensible UI scale from the screen width (high-DPI / Retina screens)."""
+    name, info = primary_output()
+    try:
+        w = int((info or {}).get("current", "0x0").split("x")[0])
+    except (ValueError, AttributeError):
+        w = 0
+    if w >= 3800:
+        return 200
+    if w >= 2500:
+        return 150
+    return 100
+
+
+def apply_scale(s):
+    scale = s.get("scale") or auto_scale()
+    if scale >= 200:
+        factor, dpi = 2, 96
     else:
-        ok = False
-    return ok
+        factor, dpi = 1, int(96 * scale / 100)
+    xfconf_set("xsettings", "/Gdk/WindowScalingFactor", "int", factor)
+    xfconf_set("xsettings", "/Xft/DPI", "int", dpi)
+    xfconf_set("xsettings", "/Gtk/CursorThemeSize", "int", int(24 * scale / 100))
+    return scale
+
+
+# ---------------------------------------------------------------------------
+# look & feel extras
+# ---------------------------------------------------------------------------
+def apply_extras(s):
+    size = int(s.get("font_size", 10))
+    xfconf_set("xsettings", "/Gtk/FontName", "string", "Inter %d" % size)
+    xfconf_set("xsettings", "/Gtk/MonospaceFontName", "string", "JetBrains Mono %d" % size)
+    xfconf_set("xfwm4", "/general/title_font", "string", "Inter Medium %d" % size)
+    if s.get("buttons") == "left":
+        xfconf_set("xfwm4", "/general/button_layout", "string", "CHM|O")
+        xfconf_set("xsettings", "/Gtk/DecorationLayout", "string", "close,minimize,maximize:icon")
+    else:
+        xfconf_set("xfwm4", "/general/button_layout", "string", "O|HMC")
+        xfconf_set("xsettings", "/Gtk/DecorationLayout", "string", "icon:minimize,maximize,close")
+    xfconf_set("xfce4-desktop", "/desktop-icons/icon-size", "uint", int(s.get("desktop_icon_size", 56)))
+    pos = {"top": "p=6;x=0;y=0", "bottom": "p=10;x=0;y=0"}.get(s.get("taskbar_position", "top"))
+    if pos:
+        xfconf_set("xfce4-panel", "/panels/panel-1/position", "string", pos)
+    xfconf_set("xsettings", "/Gtk/EnableAnimations", "bool", s.get("effects") != "off")
+
+
+# ---------------------------------------------------------------------------
+# dock (panel-2)
+# ---------------------------------------------------------------------------
+APP_DIRS = [os.path.expanduser("~/.local/share/applications"), "/usr/local/share/applications",
+            "/usr/share/applications"]
+
+
+def find_desktop(app_id):
+    for d in APP_DIRS:
+        p = os.path.join(d, app_id)
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def browser_desktop():
+    for b in ("chromium.desktop", "chromium-browser.desktop", "org.gnome.Epiphany.desktop",
+              "firefox.desktop", "firefox_firefox.desktop"):
+        if find_desktop(b):
+            return b
+    return None
+
+
+def dock_apps(s):
+    apps = s.get("dock_apps") or DEFAULT_DOCK
+    out = []
+    for a in apps:
+        if a == "@browser":
+            a = browser_desktop()
+        if a and find_desktop(a) and a not in out:
+            out.append(a)
+    return out
+
+
+def apply_dock(s, restart=True):
+    """Rebuild the dock (panel 2) from the saved app list and options."""
+    apps = dock_apps(s)
+    base = 200
+    ids = []
+    cfg = os.path.expanduser("~/.config/xfce4/panel")
+    # drop launcher dirs of our previous dock
+    for d in glob.glob(os.path.join(cfg, "launcher-2??")):
+        shutil.rmtree(d, ignore_errors=True)
+    for prop in xfconf_list("xfce4-panel"):
+        m = prop.startswith("/plugins/plugin-2") and len(prop.split("/")[2]) == len("plugin-200")
+        if m:
+            run("xfconf-query", "-c", "xfce4-panel", "-p", prop, "-r", "-R")
+    for i, app in enumerate(apps):
+        pid = base + i
+        d = os.path.join(cfg, "launcher-%d" % pid)
+        os.makedirs(d, exist_ok=True)
+        shutil.copy(find_desktop(app), os.path.join(d, app))
+        xfconf_set("xfce4-panel", "/plugins/plugin-%d" % pid, "string", "launcher")
+        xfconf_set_array("xfce4-panel", "/plugins/plugin-%d/items" % pid, "string", [app])
+        ids.append(pid)
+    sep = base + 90
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d" % sep, "string", "separator")
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d/style" % sep, "uint", 1)
+    tasks = base + 91
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d" % tasks, "string", "tasklist")
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d/show-labels" % tasks, "bool", False)
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d/flat-buttons" % tasks, "bool", True)
+    xfconf_set("xfce4-panel", "/plugins/plugin-%d/show-handle" % tasks, "bool", False)
+    ids += [sep, tasks]
+    pos = s.get("dock_position", "bottom")
+    xfconf_set("xfce4-panel", "/panels/panel-2/position", "string",
+               {"bottom": "p=10;x=0;y=0", "left": "p=7;x=0;y=0", "right": "p=3;x=0;y=0"}.get(pos, "p=10;x=0;y=0"))
+    xfconf_set("xfce4-panel", "/panels/panel-2/mode", "uint", 0 if pos == "bottom" else 2)
+    xfconf_set("xfce4-panel", "/panels/panel-2/size", "uint", int(s.get("dock_icon_size", 48)) + 8)
+    xfconf_set("xfce4-panel", "/panels/panel-2/icon-size", "uint", int(s.get("dock_icon_size", 48)))
+    xfconf_set("xfce4-panel", "/panels/panel-2/length", "uint", 1)
+    xfconf_set("xfce4-panel", "/panels/panel-2/position-locked", "bool", True)
+    xfconf_set("xfce4-panel", "/panels/panel-2/autohide-behavior", "uint",
+               {"never": 0, "smart": 1, "always": 2}.get(s.get("dock_autohide", "never"), 0))
+    xfconf_set_array("xfce4-panel", "/panels/panel-2/plugin-ids", "int", ids)
+    r = run("xfconf-query", "-c", "xfce4-panel", "-p", "/panels")
+    panels = [l.strip() for l in (r.stdout.splitlines() if r and r.returncode == 0 else []) if l.strip().isdigit()]
+    if "2" not in panels:
+        xfconf_set_array("xfce4-panel", "/panels", "int", [int(x) for x in panels] + [2])
+    if restart:
+        restart_panel()
+
+
+def _panel_pids():
+    r = subprocess.run(["pgrep", "-x", "xfce4-panel"], capture_output=True, text=True)
+    return set(r.stdout.split())
+
+
+def restart_panel():
+    """Restart the panel so a new dock layout loads. Quit it, then start a fresh one
+    unless the session manager already brought it back."""
+    run("xfce4-panel", "--quit")
+    for _ in range(20):
+        if not _panel_pids():
+            break
+        time.sleep(0.25)
+    time.sleep(1.5)
+    if not _panel_pids():
+        subprocess.Popen(["xfce4-panel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         stdin=subprocess.DEVNULL, start_new_session=True)
 
 
 # ---------------------------------------------------------------------------
@@ -266,6 +451,8 @@ def set_layout(layout):
 
 def apply_all(s, force_reload=False):
     apply_theme(s, force_reload)
-    apply_wallpaper(s)
     apply_resolution(s)
+    apply_scale(s)
+    apply_extras(s)
+    apply_wallpaper(s)
     return apply_effects(s)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """NovaOS Settings - personalisation, display, keyboard, time, sound, about."""
 import argparse
+import configparser
 import os
 import platform
 import subprocess
@@ -11,6 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import gi  # noqa: E402
 gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gdk, GdkPixbuf, GLib, Gtk  # noqa: E402
 
@@ -50,7 +52,9 @@ LAYOUTS = [("us", "English (US)"), ("gb", "English (UK)"), ("be", "Belgian"),
 PAGES = [
     ("personalization", "Personalization", "novaos-wallpapers"),
     ("taskbar", "Taskbar", "novaos-launcher"),
+    ("dock", "Dock", "novaos-start"),
     ("display", "Display", "novaos-display"),
+    ("apps", "Apps", "novaos-files"),
     ("keyboard", "Keyboard", "novaos-keyboard"),
     ("time", "Date & time", "novaos-calculator"),
     ("sound", "Sound", "novaos-sound"),
@@ -93,6 +97,72 @@ def launch(*cmd):
         subprocess.Popen(cmd, start_new_session=True)
     except OSError as e:
         print("could not launch", cmd, e, file=sys.stderr)
+
+
+POPULAR = [("VLC media player", "vlc"), ("GIMP image editor", "gimp"),
+           ("LibreOffice", "libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-gtk3"),
+           ("Chromium browser", "chromium"), ("Thunderbird mail", "thunderbird"),
+           ("SuperTux (game)", "supertux")]
+
+# packages whose apps make up NovaOS itself and must not be removed from here
+PROTECTED = {"novaos", "thunar", "xfce4-terminal", "xfce4-panel", "xfce4-appfinder", "xfce4-settings",
+             "xfdesktop4", "xfwm4", "xfce4-session", "network-manager-gnome", "lightdm",
+             "xfce4-taskmanager", "pavucontrol", "calamares", "python3", "exo-utils"}
+
+
+def installed_apps():
+    seen, out = set(), []
+    for d in C.APP_DIRS:
+        try:
+            names = sorted(os.listdir(d))
+        except OSError:
+            continue
+        for n in names:
+            if not n.endswith(".desktop") or n in seen:
+                continue
+            seen.add(n)
+            cp = configparser.ConfigParser(interpolation=None, strict=False)
+            try:
+                cp.read(os.path.join(d, n), encoding="utf-8")
+                e = cp["Desktop Entry"]
+            except (configparser.Error, KeyError, UnicodeDecodeError):
+                continue
+            if e.get("NoDisplay", "false").lower() == "true" or e.get("Type", "Application") != "Application":
+                continue
+            if e.get("OnlyShowIn") and "XFCE" not in e.get("OnlyShowIn"):
+                continue
+            if "X-XFCE-SettingsDialog" in e.get("Categories", "") or "X-XFCE-SystemSettings" in e.get("Categories", ""):
+                continue
+            out.append({"id": n, "name": e.get("Name", n), "icon": e.get("Icon", "application-x-executable"),
+                        "path": os.path.join(d, n)})
+    out.sort(key=lambda a: a["name"].lower())
+    return out
+
+
+def package_of(path):
+    """Debian package that owns a .desktop file (NovaOS renames live in /usr/local)."""
+    cands = [path]
+    if not path.startswith("/usr/share/"):
+        cands.append(os.path.join("/usr/share/applications", os.path.basename(path)))
+    for p in cands:
+        if not os.path.exists(p):
+            continue
+        r = C.run("dpkg", "-S", p)
+        if r and r.returncode == 0:
+            return r.stdout.split(":")[0].strip()
+    if path.startswith("/usr/lib/novaos") or "novaos" in os.path.basename(path):
+        return "novaos"
+    return None
+
+
+def package_desktops(pkgs):
+    out = []
+    for pkg in pkgs.split():
+        r = C.run("dpkg", "-L", pkg)
+        for line in (r.stdout.splitlines() if r and r.returncode == 0 else []):
+            if line.endswith(".desktop") and "/applications/" in line:
+                out.append(line)
+    return out
 
 
 class SettingsWindow(Gtk.ApplicationWindow):
@@ -173,6 +243,11 @@ class SettingsWindow(Gtk.ApplicationWindow):
             elif what == "effects":
                 C.apply_effects(s)
                 C.apply_panel(s)
+                C.apply_extras(s)
+            elif what == "extras":
+                C.apply_extras(s)
+            elif what == "dock":
+                C.apply_dock(s)
         threading.Thread(target=work, daemon=True).start()
 
     # -- pages ------------------------------------------------------------
@@ -250,8 +325,30 @@ class SettingsWindow(Gtk.ApplicationWindow):
         tr = Gtk.Switch(active=bool(self.s.get("transparency", True)))
         tr.connect("notify::active", lambda w, _p: self._set("transparency", w.get_active(), "panel"))
         box.pack_start(card(
-            row("Window effects", eff, "Under emulation (e.g. UTM on Apple Silicon) choose Off or Balanced."),
+            row("Window effects", eff, "Off is smoothest in a virtual machine (UTM). Balanced adds "
+                "shadows and fades; Full needs a real graphics card."),
             row("Transparent taskbar and Start menu", tr)), False, False, 0)
+
+        # Look & feel
+        box.pack_start(label("Look and feel", "nova-section"), False, False, 0)
+        font = Gtk.ComboBoxText()
+        for v, t in ((9, "Small"), (10, "Normal"), (11, "Large"), (12, "Larger"), (14, "Huge")):
+            font.append(str(v), t)
+        font.set_active_id(str(self.s.get("font_size", 10)))
+        font.connect("changed", lambda w: self._set("font_size", int(w.get_active_id()), "extras"))
+        btns = Gtk.ComboBoxText()
+        btns.append("right", "Right (like Windows)")
+        btns.append("left", "Left (like macOS)")
+        btns.set_active_id(self.s.get("buttons", "right"))
+        btns.connect("changed", lambda w: self._set("buttons", w.get_active_id(), "extras"))
+        icons = Gtk.ComboBoxText()
+        for v, t in ((40, "Small"), (56, "Normal"), (72, "Large"), (96, "Huge")):
+            icons.append(str(v), t)
+        icons.set_active_id(str(self.s.get("desktop_icon_size", 56)))
+        icons.connect("changed", lambda w: self._set("desktop_icon_size", int(w.get_active_id()), "extras"))
+        box.pack_start(card(row("Text size", font),
+                            row("Window buttons (close, minimise, maximise)", btns),
+                            row("Desktop icon size", icons)), False, False, 0)
 
     def _bar(self, mode):
         bar = Gtk.Box()
@@ -348,8 +445,16 @@ class SettingsWindow(Gtk.ApplicationWindow):
             size.append(str(v), t)
         size.set_active_id(str(self.s.get("taskbar_size", 36)))
         size.connect("changed", lambda w: self._set("taskbar_size", int(w.get_active_id()), "panel"))
+        tpos = Gtk.ComboBoxText()
+        tpos.append("top", "Top of the screen")
+        tpos.append("bottom", "Bottom of the screen")
+        tpos.set_active_id(self.s.get("taskbar_position", "top"))
+        tpos.connect("changed", lambda w: self._set("taskbar_position", w.get_active_id(), "extras"))
         box.pack_start(card(row("Show app names on taskbar buttons", labels),
-                            row("Taskbar size", size)), False, False, 0)
+                            row("Taskbar size", size),
+                            row("Taskbar position", tpos,
+                                "Tip: if you move the taskbar to the bottom, put the dock on the left or right.")),
+                       False, False, 0)
         adv = Gtk.Button(label="Panel preferences…")
         adv.connect("clicked", lambda _b: launch("xfce4-panel", "--preferences"))
         box.pack_start(card(
@@ -357,38 +462,263 @@ class SettingsWindow(Gtk.ApplicationWindow):
                 "Add or remove items such as the Whisker Menu, clock or launchers.")), False, False, 0)
 
     def page_display(self, box):
-        outs = C.outputs()
+        self.outs = C.outputs()
+        name, info = C.primary_output()
+        info = info or {"modes": [], "rates": {}, "current": None, "rate": None}
         self.res_combo = Gtk.ComboBoxText()
-        self.res_combo.append("auto", "Automatic (follow window size)")
-        current = None
-        for name, info in outs.items():
-            current = current or info["current"]
-            for m in info["modes"]:
-                self.res_combo.append(m, m.replace("x", " × "))
-            break
-        self.res_combo.set_active_id(self.s.get("resolution") or "auto")
+        self.res_combo.append("auto", "Keep current (%s)" % (info["current"] or "unknown"))
+        for m in info["modes"]:
+            self.res_combo.append(m, m.replace("x", " × "))
+        if not self.res_combo.set_active_id(self.s.get("resolution") or "auto"):
+            self.res_combo.set_active_id("auto")
+        self.rate_combo = Gtk.ComboBoxText()
+        self.res_combo.connect("changed", lambda _w: self._fill_rates())
+        self._fill_rates()
+        self.scale_combo = Gtk.ComboBoxText()
+        self.scale_combo.append("0", "Automatic (%d %%)" % C.auto_scale())
+        for v in (100, 125, 150, 175, 200):
+            self.scale_combo.append(str(v), "%d %%%s" % (v, " (recommended for 4K)" if v == 200 else ""))
+        self.scale_combo.set_active_id(str(self.s.get("scale") or 0))
         apply_b = Gtk.Button(label="Apply")
         apply_b.get_style_context().add_class("suggested-action")
         apply_b.connect("clicked", self.on_resolution)
-        hb = Gtk.Box(spacing=8)
-        hb.pack_start(self.res_combo, False, False, 0)
-        hb.pack_start(apply_b, False, False, 0)
-        out_names = ", ".join(outs) or "none detected"
-        box.pack_start(card(row("Resolution", hb, f"Output: {out_names}. Current: {current or 'unknown'}")),
-                       False, False, 0)
-        box.pack_start(label("Tip: in UTM, “Automatic” lets the VM window size drive the resolution "
-                             "(requires a display with SPICE guest-agent support).",
+        cur = info["current"] or "unknown"
+        if info["rate"] and float(info["rate"]) > 0:
+            cur += " at %s Hz" % info["rate"]
+        box.pack_start(label("Screen: %s · currently %s" % (name or "none detected", cur),
                              "nova-subtitle", wrap=True), False, False, 0)
+        box.pack_start(card(
+            row("Resolution", self.res_combo),
+            row("Refresh rate", self.rate_combo, "NovaOS picks the highest rate your screen supports."),
+            row("Scale (size of everything)", self.scale_combo,
+                "Use 150–200 % on high-resolution screens (1440p, 4K, Retina) so text is not tiny."),
+            row("", apply_b)), False, False, 0)
+        box.pack_start(label("Tip for UTM on a Mac: a smaller resolution such as 1920 × 1080 is much smoother, "
+                             "because a virtual machine has no graphics card. Raise the scale instead of the "
+                             "resolution if things look small.", "nova-subtitle", wrap=True), False, False, 0)
         adv = Gtk.Button(label="Advanced display settings…")
         adv.connect("clicked", lambda _b: launch("xfce4-display-settings"))
-        box.pack_start(card(row("Scaling, rotation and multiple monitors", adv)), False, False, 0)
+        box.pack_start(card(row("Rotation and multiple monitors", adv)), False, False, 0)
+
+    def _fill_rates(self):
+        _n, info = C.primary_output()
+        info = info or {"rates": {}, "current": None, "rate": None}
+        mode = self.res_combo.get_active_id()
+        if mode in (None, "auto"):
+            mode = info["current"]
+        rates = sorted((r for r in info["rates"].get(mode) or [] if float(r) > 0), key=float, reverse=True)
+        self.rate_combo.remove_all()
+        self.rate_combo.append("max", "Highest available" + (" (%s Hz)" % rates[0] if rates else ""))
+        for r in rates:
+            self.rate_combo.append(r, "%s Hz" % r)
+        if not self.rate_combo.set_active_id(self.s.get("refresh") or "max"):
+            self.rate_combo.set_active_id("max")
 
     def on_resolution(self, _b):
         mode = self.res_combo.get_active_id()
+        rate = self.rate_combo.get_active_id()
+        scale = int(self.scale_combo.get_active_id() or 0)
         self.s["resolution"] = None if mode == "auto" else mode
+        self.s["refresh"] = None if rate == "max" else rate
+        self.s["scale"] = scale or None
         C.save(self.s)
-        if mode != "auto" and not C.apply_resolution(self.s):
+        ok = C.apply_resolution(self.s)
+        C.apply_scale(self.s)
+        if not ok and mode != "auto":
             self._error("Could not switch to %s." % mode)
+
+    # -- dock ---------------------------------------------------------------
+    def page_dock(self, box):
+        box.pack_start(label("Choose which apps sit in the dock, where it goes and how big it is.",
+                             "nova-subtitle", wrap=True), False, False, 0)
+        pos = Gtk.ComboBoxText()
+        for k, t in (("bottom", "Bottom"), ("left", "Left"), ("right", "Right")):
+            pos.append(k, t)
+        pos.set_active_id(self.s.get("dock_position", "bottom"))
+        pos.connect("changed", lambda w: self._set("dock_position", w.get_active_id(), "dock"))
+        size = Gtk.ComboBoxText()
+        for v, t in ((32, "Small"), (40, "Medium"), (48, "Normal"), (56, "Large"), (64, "Huge")):
+            size.append(str(v), t)
+        size.set_active_id(str(self.s.get("dock_icon_size", 48)))
+        size.connect("changed", lambda w: self._set("dock_icon_size", int(w.get_active_id()), "dock"))
+        hide = Gtk.ComboBoxText()
+        for k, t in (("never", "Always show"), ("smart", "Hide when a window covers it"),
+                     ("always", "Always auto-hide")):
+            hide.append(k, t)
+        hide.set_active_id(self.s.get("dock_autohide", "never"))
+        hide.connect("changed", lambda w: self._set("dock_autohide", w.get_active_id(), "dock"))
+        box.pack_start(card(row("Position", pos), row("Icon size", size), row("Auto-hide", hide)),
+                       False, False, 0)
+
+        box.pack_start(label("Pinned apps", "nova-section"), False, False, 0)
+        self.dock_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        self.dock_list.get_style_context().add_class("nova-card")
+        box.pack_start(self.dock_list, False, False, 0)
+        hb = Gtk.Box(spacing=8)
+        self.dock_add = Gtk.ComboBoxText()
+        self.dock_add.set_size_request(300, -1)
+        add_b = Gtk.Button(label="Add to dock")
+        add_b.connect("clicked", self.on_dock_add)
+        reset = Gtk.Button(label="Reset to default")
+        reset.connect("clicked", self.on_dock_reset)
+        hb.pack_start(self.dock_add, False, False, 0)
+        hb.pack_start(add_b, False, False, 0)
+        hb.pack_end(reset, False, False, 0)
+        box.pack_start(card(hb), False, False, 0)
+        self._fill_dock()
+
+    def _fill_dock(self):
+        for ch in self.dock_list.get_children():
+            self.dock_list.remove(ch)
+        apps = C.dock_apps(self.s)
+        all_apps = installed_apps()
+        names = {a["id"]: a for a in all_apps}
+        for i, app in enumerate(apps):
+            info = names.get(app) or {"name": app, "icon": "application-x-executable"}
+            hb = Gtk.Box(spacing=10)
+            hb.set_border_width(4)
+            hb.pack_start(Gtk.Image.new_from_icon_name(info["icon"], Gtk.IconSize.LARGE_TOOLBAR), False, False, 0)
+            hb.pack_start(label(info["name"]), True, True, 0)
+            for icon, tip, delta in (("go-up-symbolic", "Move up", -1), ("go-down-symbolic", "Move down", 1)):
+                b = Gtk.Button.new_from_icon_name(icon, Gtk.IconSize.BUTTON)
+                b.set_tooltip_text(tip)
+                b.set_sensitive(0 <= i + delta < len(apps))
+                b.connect("clicked", self.on_dock_move, i, delta)
+                hb.pack_start(b, False, False, 0)
+            rm = Gtk.Button.new_from_icon_name("list-remove-symbolic", Gtk.IconSize.BUTTON)
+            rm.set_tooltip_text("Remove from dock")
+            rm.connect("clicked", self.on_dock_remove, i)
+            hb.pack_start(rm, False, False, 0)
+            self.dock_list.add(hb)
+        self.dock_add.remove_all()
+        for a in all_apps:
+            if a["id"] not in apps:
+                self.dock_add.append(a["id"], a["name"])
+        self.dock_add.set_active(0)
+        self.dock_list.show_all()
+
+    def _save_dock(self, apps):
+        self.s["dock_apps"] = apps
+        self.commit("dock")
+        self._fill_dock()
+
+    def on_dock_move(self, _b, i, delta):
+        apps = C.dock_apps(self.s)
+        apps[i], apps[i + delta] = apps[i + delta], apps[i]
+        self._save_dock(apps)
+
+    def on_dock_remove(self, _b, i):
+        apps = C.dock_apps(self.s)
+        del apps[i]
+        self._save_dock(apps)
+
+    def on_dock_add(self, _b):
+        app = self.dock_add.get_active_id()
+        if app:
+            self._save_dock(C.dock_apps(self.s) + [app])
+
+    def on_dock_reset(self, _b):
+        self.s["dock_apps"] = None
+        self.commit("dock")
+        self._fill_dock()
+
+    # -- apps (install / uninstall) -----------------------------------------
+    def page_apps(self, box):
+        box.pack_start(label("Remove apps you don't need, or install new ones from the internet. "
+                             "A small window opens to do the work; it may ask for your password.",
+                             "nova-subtitle", wrap=True), False, False, 0)
+        box.pack_start(label("Get new apps", "nova-section"), False, False, 0)
+        quick = Gtk.FlowBox(selection_mode=Gtk.SelectionMode.NONE, max_children_per_line=3,
+                            column_spacing=8, row_spacing=8, homogeneous=True)
+        for title, pkg in POPULAR:
+            b = Gtk.Button(label=title)
+            b.connect("clicked", lambda _b, p=pkg, t=title: self.run_apt("install", p, t))
+            quick.add(b)
+        self.search = Gtk.SearchEntry(placeholder_text="Search all apps (e.g. gimp, vlc, game)…")
+        self.search.connect("activate", self.on_search)
+        self.results = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        box.pack_start(card(quick, self.search, self.results), False, False, 0)
+
+        box.pack_start(label("Installed apps", "nova-section"), False, False, 0)
+        self.app_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        self.app_list.get_style_context().add_class("nova-card")
+        box.pack_start(self.app_list, False, False, 0)
+        self._fill_apps()
+
+    def _fill_apps(self):
+        for ch in self.app_list.get_children():
+            self.app_list.remove(ch)
+        for a in installed_apps():
+            hb = Gtk.Box(spacing=10)
+            hb.set_border_width(4)
+            hb.pack_start(Gtk.Image.new_from_icon_name(a["icon"], Gtk.IconSize.LARGE_TOOLBAR), False, False, 0)
+            hb.pack_start(label(a["name"]), True, True, 0)
+            pkg = package_of(a["path"])
+            if pkg and pkg not in PROTECTED:
+                b = Gtk.Button(label="Uninstall")
+                b.get_style_context().add_class("destructive-action")
+                b.connect("clicked", lambda _b, p=pkg, n=a["name"]: self.run_apt("remove", p, n))
+                hb.pack_start(b, False, False, 0)
+            else:
+                hb.pack_start(label("Part of NovaOS", "nova-subtitle"), False, False, 0)
+            self.app_list.add(hb)
+        self.app_list.show_all()
+
+    def on_search(self, entry):
+        q = entry.get_text().strip()
+        for ch in self.results.get_children():
+            self.results.remove(ch)
+        if not q:
+            return
+        r = C.run("apt-cache", "search", "--names-only", q)
+        lines = (r.stdout.splitlines() if r and r.returncode == 0 else [])[:25]
+        if not lines:
+            self.results.add(label("Nothing found. If you have never installed anything, "
+                                   "first click “Refresh app list” below.", "nova-subtitle", wrap=True))
+            rb = Gtk.Button(label="Refresh app list")
+            rb.connect("clicked", lambda _b: self.run_apt("update", "", "app list"))
+            self.results.add(rb)
+        for line in lines:
+            pkg, _sep, desc = line.partition(" - ")
+            hb = Gtk.Box(spacing=10)
+            v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            v.pack_start(label(pkg), False, False, 0)
+            v.pack_start(label(desc, "nova-subtitle", wrap=True), False, False, 0)
+            hb.pack_start(v, True, True, 0)
+            b = Gtk.Button(label="Install")
+            b.connect("clicked", lambda _b, p=pkg: self.run_apt("install", p, p))
+            b.set_valign(Gtk.Align.CENTER)
+            hb.pack_start(b, False, False, 0)
+            self.results.add(hb)
+        self.results.show_all()
+
+    def run_apt(self, action, pkg, title):
+        if action == "install":
+            cmd = "sudo apt-get update -q && sudo apt-get install -y %s" % pkg
+            head = "Installing %s" % title
+        elif action == "remove":
+            cmd = "sudo apt-get remove -y %s && sudo rm -f %s" % (
+                pkg, " ".join("/usr/local/share/applications/" + os.path.basename(f)
+                              for f in package_desktops(pkg)) or "/dev/null/none")
+            head = "Removing %s" % title
+        else:
+            cmd = "sudo apt-get update"
+            head = "Refreshing the app list"
+        script = ("echo '%s…'; echo; if %s; then echo; echo 'Done! You can close this window.'; "
+                  "else echo; echo 'Something went wrong (see above). Check your internet connection.'; fi; "
+                  "sleep 3" % (head, cmd))
+
+        def work():
+            subprocess.run(["xfce4-terminal", "--disable-server", "-T", head, "--hold",
+                            "-x", "bash", "-c", script])
+            GLib.idle_add(self._after_apt)
+        threading.Thread(target=work, daemon=True).start()
+
+    def _after_apt(self):
+        self._fill_apps()
+        self._fill_dock()
+        C.apply_dock(dict(self.s))
+        return False
 
     def page_keyboard(self, box):
         combo = Gtk.ComboBoxText()

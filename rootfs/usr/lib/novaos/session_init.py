@@ -69,28 +69,21 @@ def main():
     if r and r.returncode == 0:
         C.run("xset", "s", "off")
         C.run("xset", "-dpms")
-    if first and in_vm and not s.get("resolution"):
-        # Very large virtual screens (e.g. 2560x1440 "Retina") are slow without
-        # a GPU; cap the first-boot resolution at 1920x1080.
-        for name, info in C.outputs().items():
-            cur = info.get("current") or ""
-            try:
-                w = int(cur.split("x")[0])
-            except ValueError:
-                w = 0
-            if w > 1920:
-                for m in ("1920x1080", "1920x1200", "1680x1050", "1600x900", "1280x800"):
-                    if m in info["modes"]:
-                        s["resolution"] = m
-                        C.save(s)
-                        break
-            break
     used = C.apply_all(s)
     print("novaos-session-init: effects =", used)
     # Panel layout may still be initialising; re-apply panel colours once more.
     time.sleep(3)
     C.apply_panel(s)
     C.apply_wallpaper(s)
+    # Build the dock from the saved app list (the first time, or after an upgrade).
+    dock_marker = os.path.expanduser("~/.config/novaos/.dock-v1")
+    if not os.path.exists(dock_marker):
+        for _ in range(30):
+            if subprocess.run(["pgrep", "-x", "xfce4-panel"], capture_output=True).returncode == 0:
+                break
+            time.sleep(0.5)
+        C.apply_dock(s)
+        open(dock_marker, "w").close()
 
 
 if __name__ == "__main__":

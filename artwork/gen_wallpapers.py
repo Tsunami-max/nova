@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "rootfs"
 DEST = os.path.join(OUT, "usr/share/backgrounds/novaos")
-W, H = 2560, 1600
+W, H = 3840, 2160
 rng = np.random.default_rng(7)
 
 
@@ -65,7 +65,7 @@ def finish(rgb, name, grain=0.012, vignette=0.35):
     img = Image.fromarray((np.clip(rgb, 0, 1) * 255 + 0.5).astype(np.uint8), "RGB")
     os.makedirs(os.path.join(DEST, "thumbs"), exist_ok=True)
     img.save(os.path.join(DEST, name + ".jpg"), quality=92, subsampling=0, optimize=True)
-    img.resize((320, 200), Image.LANCZOS).save(os.path.join(DEST, "thumbs", name + ".jpg"), quality=88)
+    img.resize((320, 180), Image.LANCZOS).save(os.path.join(DEST, "thumbs", name + ".jpg"), quality=88)
     print("wrote", name)
     return img
 
@@ -395,8 +395,156 @@ def daylight():
     return finish(rgb, "nova-daylight", grain=0.008, vignette=0)
 
 
+# ---------------------------------------------------------------------------
+# 7. Neon Horizon - synthwave sun over a glowing grid
+# ---------------------------------------------------------------------------
+def neon_horizon():
+    x, y = grid()
+    hz = 0.58
+    sky = hexrgb("#07021a") + (hexrgb("#3b0a5e") - hexrgb("#07021a")) * np.clip(y / hz, 0, 1)[..., None] ** 1.4
+    sky = screen(sky, hexrgb("#ff3d9a") * (0.55 * blob(x, y, 0.5, hz, 0.45, 0.12))[..., None])
+    stars = (rng.random((H, W)) > 0.9994) * rng.random((H, W)) * (y < hz * 0.8)
+    sky = screen(sky, np.repeat(stars[..., None], 3, 2))
+    # sun with horizontal cut-outs
+    sx, sy, sr = 0.5, hz - 0.17, 0.2
+    aspect = W / H
+    d = np.sqrt(((x - sx) * aspect) ** 2 + (y - sy) ** 2)
+    sun = (d < sr).astype(np.float32)
+    t = np.clip((y - (sy - sr)) / (2 * sr), 0, 1)
+    sun_col = hexrgb("#ffe066") * (1 - t[..., None]) + hexrgb("#ff2d7a") * t[..., None]
+    for i in range(7):
+        yc = sy + 0.02 + i * 0.03
+        sun *= 1 - ((y > yc) & (y < yc + 0.004 + i * 0.0018)).astype(np.float32)
+    glow = np.exp(-np.clip(d - sr, 0, None) / 0.05) * 0.5
+    rgb = sky * (1 - sun[..., None]) + sun_col * sun[..., None]
+    rgb = screen(rgb, hexrgb("#ff5fa2") * glow[..., None])
+    # ground with perspective grid
+    gy = np.clip((y - hz) / (1 - hz), 1e-4, 1)
+    ground = (y > hz)
+    base = hexrgb("#12002a") * (1 - gy[..., None]) + hexrgb("#05010f") * gy[..., None]
+    z = 1 / gy
+    hlines = np.abs(((z * 0.9) % 1) - 0.5) > (0.5 - 0.03 * gy * 3)
+    xv = (x - 0.5) * z
+    vlines = np.abs(((xv * 6) % 1) - 0.5) > (0.5 - 0.02 * gy * 3)
+    lines = (hlines | vlines).astype(np.float32) * np.clip(gy * 2.5, 0, 1)
+    gcol = hexrgb("#ff3df0") * (1 - gy[..., None]) + hexrgb("#3df0ff") * gy[..., None]
+    g = base + gcol * (lines * 0.9)[..., None]
+    rgb = np.where(ground[..., None], g, rgb)
+    rgb = screen(rgb, hexrgb("#ff7ad9") * (0.6 * np.exp(-((y - hz) / 0.006) ** 2))[..., None])
+    img = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))
+    return finish(np.asarray(img, np.float32) / 255, "nova-neon-horizon", vignette=0.3)
+
+
+# ---------------------------------------------------------------------------
+# 8. Nebula - deep space clouds and stars
+# ---------------------------------------------------------------------------
+def nebula():
+    w, h = W // 2, H // 2
+    x, y = grid(w, h)
+    f1 = fbm(w, h, 2, 6, 61)
+    f2 = fbm(w, h, 3, 6, 62)
+    f3 = fbm(w, h, 2, 5, 63)
+    rgb = hexrgb("#020309") * np.ones((h, w, 3), np.float32)
+    c1 = np.clip((f1 - 0.45) * 2.6, 0, 1) ** 1.6
+    c2 = np.clip((f2 - 0.5) * 3.0, 0, 1) ** 1.8
+    c3 = np.clip((f3 - 0.55) * 4.0, 0, 1) ** 2
+    band = np.exp(-((y - 0.55 - 0.25 * (x - 0.5)) / 0.28) ** 2)
+    rgb = screen(rgb, hexrgb("#7b3bf0") * (c1 * band * 1.4)[..., None])
+    rgb = screen(rgb, hexrgb("#ff4f9a") * (c2 * band * 1.2)[..., None])
+    rgb = screen(rgb, hexrgb("#38d1ff") * (c3 * band * 1.3)[..., None])
+    rgb = screen(rgb, hexrgb("#ffd7f0") * (0.25 * blob(x, y, 0.62, 0.48, 0.08))[..., None])
+    img = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)
+    rgb = np.asarray(img, np.float32) / 255
+    r = np.random.default_rng(5)
+    stars = (r.random((H, W)) > 0.9985) * (0.3 + 0.7 * r.random((H, W)))
+    rgb = screen(rgb, np.repeat(stars[..., None], 3, 2))
+    big = Image.new("RGB", (W, H))
+    d = ImageDraw.Draw(big)
+    for _ in range(60):
+        sx, sy, rr = r.random() * W, r.random() * H, 1 + r.random() * 3
+        d.ellipse([sx - rr, sy - rr, sx + rr, sy + rr], fill=(255, 255, 255))
+    big = np.asarray(big.filter(ImageFilter.GaussianBlur(2.5)), np.float32) / 255
+    rgb = screen(rgb, big * 1.6)
+    return finish(rgb, "nova-nebula", vignette=0.4)
+
+
+# ---------------------------------------------------------------------------
+# 9. Golden Dunes - sunset desert
+# ---------------------------------------------------------------------------
+def dunes():
+    x, y = grid()
+    sky = hexrgb("#2b1b5e") + (hexrgb("#ff9a62") - hexrgb("#2b1b5e")) * np.clip(y / 0.55, 0, 1)[..., None] ** 1.3
+    sky = screen(sky, hexrgb("#ffd27a") * (0.9 * blob(x, y, 0.3, 0.5, 0.18, 0.12))[..., None])
+    sky = screen(sky, hexrgb("#fff2c9") * np.clip(blob(x, y, 0.3, 0.47, 0.03, 0.05) * 1.8, 0, 1)[..., None])
+    rgb = sky
+    layers = [(0.52, "#c96a4a", "#7a3a3a", 11), (0.62, "#e08a55", "#8a4636", 12),
+              (0.74, "#f0a35e", "#9a5238", 13), (0.88, "#f7b86a", "#a65a3a", 14)]
+    for base, lit, shade, seed in layers:
+        prof = fbm(W, 1, 2, 3, seed)[0]
+        prof = (prof - prof.min()) / (np.ptp(prof) + 1e-6)
+        crest = base - 0.09 * prof
+        grad = np.gradient(crest)
+        inside = y > crest[None, :]
+        side = (grad[None, :] > 0).astype(np.float32)
+        depth = np.clip((y - crest[None, :]) / 0.15, 0, 1)
+        col = hexrgb(lit) * (1 - side[..., None] * 0.55) + hexrgb(shade) * (side[..., None] * 0.55)
+        col = col * (1 - 0.25 * depth[..., None])
+        ripple = 0.015 * np.sin((y - crest[None, :]) * 300 + np.sin(x * 25) * 3) * depth
+        col = np.clip(col + ripple[..., None], 0, 1)
+        rgb = np.where(inside[..., None], col, rgb)
+        rim = np.exp(-((y - crest[None, :]) / 0.002) ** 2) * 0.5
+        rgb = screen(rgb, hexrgb("#ffe0a0") * rim[..., None])
+    return finish(rgb, "nova-dunes", vignette=0.25)
+
+
+# ---------------------------------------------------------------------------
+# 10. Ocean Dusk - calm sea under a pastel sky
+# ---------------------------------------------------------------------------
+def ocean_dusk():
+    x, y = grid()
+    hz = 0.6
+    sky = hexrgb("#1a2a6c") + (hexrgb("#f7a8b8") - hexrgb("#1a2a6c")) * np.clip(y / hz, 0, 1)[..., None] ** 1.5
+    clouds = np.clip((fbm(W, H, 2, 5, 81) - 0.52) * 3, 0, 1) * (y < hz)
+    sky = sky * (1 - 0.35 * clouds[..., None]) + hexrgb("#ffd1dc") * (0.35 * clouds)[..., None]
+    sky = screen(sky, hexrgb("#fff0d0") * np.clip(blob(x, y, 0.7, hz - 0.02, 0.03, 0.05) * 1.5, 0, 1)[..., None])
+    hzi = int(hz * H)
+    n = H - hzi
+    depth = np.linspace(0, 1, n, dtype=np.float32)[:, None]
+    waves = noise(W, n, (24, 60), 9) - 0.5
+    sea = hexrgb("#24346e") * (1 - depth[..., None]) + hexrgb("#0b1230") * depth[..., None]
+    refl = sky[:hzi][::-1][np.clip((np.arange(n)[:, None] * 0.8 + waves * 30).astype(int), 0, hzi - 1), np.arange(W)[None, :]]
+    sea = sea * 0.6 + refl * 0.4 * (1 - depth[..., None] * 0.7)
+    glitter = (np.abs(np.sin(np.arange(n)[:, None] * 0.7 + waves * 40)) > 0.97) * \
+        np.exp(-((x[hzi:] - 0.7) / (0.02 + 0.15 * depth)) ** 2)
+    sea = screen(sea, hexrgb("#ffe8c0") * (0.8 * glitter)[..., None])
+    rgb = sky.copy()
+    rgb[hzi:] = sea
+    return finish(rgb, "nova-ocean-dusk", vignette=0.25)
+
+
+# ---------------------------------------------------------------------------
+# 11. Liquid Glass - soft gradient blobs (great for light mode)
+# ---------------------------------------------------------------------------
+def liquid_glass():
+    w, h = W // 4, H // 4
+    x, y = grid(w, h)
+    rgb = np.ones((h, w, 3), np.float32) * hexrgb("#0d0f2b")
+    r = np.random.default_rng(23)
+    cols = ["#6c7bff", "#ff6fb5", "#38d1ff", "#a855f7", "#22c55e", "#f59e0b"]
+    for i, c in enumerate(cols):
+        cx, cy = r.random(), r.random()
+        rr = 0.18 + 0.2 * r.random()
+        a = blob(x, y, cx, cy, rr * 0.9, rr)
+        rgb = rgb * (1 - 0.85 * a[..., None]) + hexrgb(c) * (0.85 * a)[..., None]
+    img = Image.fromarray((np.clip(rgb, 0, 1) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)
+    img = img.filter(ImageFilter.GaussianBlur(40))
+    rgb = np.asarray(img, np.float32) / 255
+    return finish(rgb, "nova-liquid-glass", vignette=0.15)
+
+
 if __name__ == "__main__":
     os.makedirs(DEST, exist_ok=True)
-    which = sys.argv[2:] or ["aurora", "midnight_peaks", "crystal", "prism", "lakeside", "daylight"]
+    which = sys.argv[2:] or ["aurora", "midnight_peaks", "crystal", "prism", "lakeside", "daylight",
+                             "neon_horizon", "nebula", "dunes", "ocean_dusk", "liquid_glass"]
     for name in which:
         globals()[name]()

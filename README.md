@@ -135,10 +135,16 @@ A kernel update with `sudo apt upgrade` brings the full driver set back.
 
 ### Settings app
 
-* **Personalization**: Dark / Light mode, 11 accent colours, 6 wallpapers (or your
-  own picture), visual effects (Off / Balanced / Full) and taskbar transparency.
-* **Taskbar**: size, show app names.
-* **Display**: resolution (or "Automatic" to follow the UTM window size).
+* **Personalization**: Dark / Light mode, 11 accent colours, 11 4K wallpapers (or your
+  own picture), visual effects (Off / Balanced / Full), taskbar transparency, text size,
+  window-button side (left like macOS / right like Windows) and desktop icon size.
+* **Taskbar**: size, show app names, top or bottom of the screen.
+* **Dock**: pick, reorder and remove the pinned apps; bottom / left / right; icon size;
+  auto-hide.
+* **Display**: resolution, refresh rate (defaults to the highest your screen offers) and
+  scale 100–200 % for high-resolution (1440p / 4K / Retina) screens.
+* **Apps**: uninstall apps (including the web browser) and install new ones
+  (one-click VLC, GIMP, LibreOffice, Chromium, Thunderbird, or search everything).
 * **Keyboard**: layout (e.g. Belgian, French, German, US…).
 * **Date & time**, **Sound**, **Network**, **About NovaOS**.
 
