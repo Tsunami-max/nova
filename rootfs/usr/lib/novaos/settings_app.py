@@ -525,10 +525,11 @@ class SettingsWindow(Gtk.ApplicationWindow):
                         cores += 1
         except OSError:
             pass
-        if not cpu:
+        if cpu in ("", "-"):
+            cpu = ""
             r = C.run("lscpu")
             for line in (r.stdout.splitlines() if r else []):
-                if line.startswith(("Model name", "Vendor ID")):
+                if line.startswith(("Model name", "Vendor ID")) and line.split(":", 1)[1].strip() not in ("", "-"):
                     cpu = line.split(":", 1)[1].strip()
                     if line.startswith("Model name"):
                         break
@@ -554,7 +555,9 @@ class SettingsWindow(Gtk.ApplicationWindow):
                     osname = line.split("=", 1)[1].strip().strip('"') + " (Ubuntu 24.04 base)"
         except OSError:
             pass
-        vals = {"cpu": cpu or "unknown", "cores": str(cores or os.cpu_count() or "?"),
+        if not cpu:
+            cpu = "%s processor" % ("Apple silicon / ARM" if platform.machine() == "aarch64" else platform.machine())
+        vals = {"cpu": cpu, "cores": str(cores or os.cpu_count() or "?"),
                 "arch": platform.machine(), "virt": virt_name, "gpu": gpu, "display": disp,
                 "os": osname, "kernel": platform.release()}
         for k, v in vals.items():

@@ -49,6 +49,14 @@ def main():
     trust_launchers(ddir)
 
     s = C.load()
+    in_vm = False
+    r = C.run("systemd-detect-virt", "-q", "--vm")
+    if r and r.returncode == 0:
+        in_vm = True
+    if first and in_vm:
+        # VMs have no 3D acceleration: start with effects off for smoothness.
+        s["effects"] = "off"
+        s["transparency"] = False
     if first:
         C.save(s)
     # Wait for xfconfd / xfsettingsd to be up before applying settings.
@@ -61,6 +69,22 @@ def main():
     if r and r.returncode == 0:
         C.run("xset", "s", "off")
         C.run("xset", "-dpms")
+    if first and in_vm and not s.get("resolution"):
+        # Very large virtual screens (e.g. 2560x1440 "Retina") are slow without
+        # a GPU; cap the first-boot resolution at 1920x1080.
+        for name, info in C.outputs().items():
+            cur = info.get("current") or ""
+            try:
+                w = int(cur.split("x")[0])
+            except ValueError:
+                w = 0
+            if w > 1920:
+                for m in ("1920x1080", "1920x1200", "1680x1050", "1600x900", "1280x800"):
+                    if m in info["modes"]:
+                        s["resolution"] = m
+                        C.save(s)
+                        break
+            break
     used = C.apply_all(s)
     print("novaos-session-init: effects =", used)
     # Panel layout may still be initialising; re-apply panel colours once more.

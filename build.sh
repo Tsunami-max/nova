@@ -99,7 +99,7 @@ PKGS_COMMON=(
 	ubuntu-minimal systemd-sysv systemd-timesyncd sudo locales tzdata
 	keyboard-configuration console-setup kbd casper discover laptop-detect
 	initramfs-tools zstd squashfs-tools dosfstools e2fsprogs parted
-	network-manager iputils-ping curl nano less htop bash-completion pciutils
+	network-manager systemd-resolved iputils-ping curl nano less htop bash-completion pciutils
 	dbus-x11 dbus-user-session policykit-1 udisks2 acpid
 	spice-vdagent qemu-guest-agent
 	# --- graphics stack ---
@@ -243,6 +243,9 @@ stage_image() {
 	rm -f "$CHROOT/usr/local/share/ca-certificates/build-extra.crt"
 	rm -rf "$CHROOT"/tmp/* "$CHROOT"/var/tmp/* "$CHROOT"/var/lib/apt/lists/*
 	rm -f "$CHROOT"/var/log/*.log "$CHROOT/etc/machine-id" "$CHROOT/var/lib/dbus/machine-id"
+	# DNS: never ship the build machine's resolv.conf; use systemd-resolved.
+	rm -f "$CHROOT/etc/resolv.conf"
+	ln -s ../run/systemd/resolve/stub-resolv.conf "$CHROOT/etc/resolv.conf"
 	touch "$CHROOT/etc/machine-id"
 
 	local kver

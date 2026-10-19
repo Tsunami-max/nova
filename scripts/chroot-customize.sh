@@ -211,6 +211,7 @@ echo /usr/sbin/lightdm > /etc/X11/default-display-manager
 systemctl enable lightdm.service || true
 systemctl set-default graphical.target
 systemctl enable NetworkManager.service || true
+systemctl enable systemd-resolved.service || true
 for u in apt-daily.timer apt-daily-upgrade.timer motd-news.timer e2scrub_all.timer \
 	man-db.timer fstrim.timer; do
 	systemctl disable "$u" 2>/dev/null || true
