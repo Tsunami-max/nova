@@ -4,6 +4,7 @@ import argparse
 import configparser
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import threading
@@ -129,6 +130,8 @@ def installed_apps():
                 continue
             if e.get("NoDisplay", "false").lower() == "true" or e.get("Type", "Application") != "Application":
                 continue
+            if not C._tryexec_ok(os.path.join(d, n)):
+                continue
             if e.get("OnlyShowIn") and "XFCE" not in e.get("OnlyShowIn"):
                 continue
             if "X-XFCE-SettingsDialog" in e.get("Categories", "") or "X-XFCE-SystemSettings" in e.get("Categories", ""):
@@ -163,6 +166,28 @@ def package_desktops(pkgs):
             if line.endswith(".desktop") and "/applications/" in line:
                 out.append(line)
     return out
+
+
+def clean_desktop_shortcuts():
+    """Remove desktop shortcuts of apps that are no longer installed."""
+    r = C.run("xdg-user-dir", "DESKTOP")
+    ddir = r.stdout.strip() if r and r.returncode == 0 and r.stdout.strip() else os.path.expanduser("~/Desktop")
+    for n in os.listdir(ddir) if os.path.isdir(ddir) else []:
+        if not n.endswith(".desktop"):
+            continue
+        p = os.path.join(ddir, n)
+        cp = configparser.ConfigParser(interpolation=None, strict=False)
+        try:
+            cp.read(p, encoding="utf-8")
+            e = cp["Desktop Entry"]
+        except (configparser.Error, KeyError, UnicodeDecodeError):
+            continue
+        prog = e.get("TryExec") or ""
+        if prog and not (os.path.isabs(prog) and os.path.exists(prog)) and not shutil.which(prog):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
 
 
 class SettingsWindow(Gtk.ApplicationWindow):
@@ -311,7 +336,15 @@ class SettingsWindow(Gtk.ApplicationWindow):
             self._add_wall(full)
         browse = Gtk.Button(label="Browse for a picture…")
         browse.connect("clicked", self.on_browse)
-        wall_card = card(self.wall_flow, row("Use your own picture", browse))
+        cycle = Gtk.ComboBoxText()
+        for v, t in ((0, "Off"), (5, "Every 5 minutes"), (30, "Every 30 minutes"), (60, "Every hour"),
+                     (1440, "Every day")):
+            cycle.append(str(v), t)
+        cycle.set_active_id(str(self.s.get("wallpaper_cycle") or 0))
+        cycle.connect("changed", lambda w: self._set("wallpaper_cycle", int(w.get_active_id()), "wallpaper"))
+        wall_card = card(self.wall_flow, row("Use your own picture", browse),
+                         row("Change wallpaper automatically", cycle,
+                             "Cycles through the pictures in the same folder as the current wallpaper."))
         box.pack_start(wall_card, False, False, 0)
 
         # Effects
@@ -325,8 +358,8 @@ class SettingsWindow(Gtk.ApplicationWindow):
         tr = Gtk.Switch(active=bool(self.s.get("transparency", True)))
         tr.connect("notify::active", lambda w, _p: self._set("transparency", w.get_active(), "panel"))
         box.pack_start(card(
-            row("Window effects", eff, "Off is smoothest in a virtual machine (UTM). Balanced adds "
-                "shadows and fades; Full needs a real graphics card."),
+            row("Window effects", eff, "Without graphics acceleration (see Display), Off is smoothest. "
+                "With it, Balanced adds shadows and fades and Full adds blur."),
             row("Transparent taskbar and Start menu", tr)), False, False, 0)
 
         # Look & feel
@@ -493,9 +526,20 @@ class SettingsWindow(Gtk.ApplicationWindow):
             row("Scale (size of everything)", self.scale_combo,
                 "Use 150–200 % on high-resolution screens (1440p, 4K, Retina) so text is not tiny."),
             row("", apply_b)), False, False, 0)
-        box.pack_start(label("Tip for UTM on a Mac: a smaller resolution such as 1920 × 1080 is much smoother, "
-                             "because a virtual machine has no graphics card. Raise the scale instead of the "
-                             "resolution if things look small.", "nova-subtitle", wrap=True), False, False, 0)
+        gpu = C.gl_accelerated()
+        renderer = C.gl_renderer() or "unknown"
+        if gpu:
+            gtxt = "On (%s). High resolutions, effects and video play smoothly." % renderer
+        else:
+            gtxt = ("Off (software drawing). For smooth high resolutions in UTM: shut NovaOS down, "
+                    "click the VM's settings → Display → choose an “Emulated Display Card” marked "
+                    "“GPU Supported” (virtio-gpu-gl-pci), or tick “Hardware OpenGL Acceleration” "
+                    "when you create the VM. Until then, 1920 × 1080 or lower is smoothest.")
+        box.pack_start(card(row("Graphics acceleration", label("On" if gpu else "Off", xalign=1.0), gtxt)),
+                       False, False, 0)
+        box.pack_start(label("Refresh rate: inside a virtual machine the screen usually offers 60 Hz; "
+                             "NovaOS always uses the highest rate on offer.", "nova-subtitle", wrap=True),
+                       False, False, 0)
         adv = Gtk.Button(label="Advanced display settings…")
         adv.connect("clicked", lambda _b: launch("xfce4-display-settings"))
         box.pack_start(card(row("Rotation and multiple monitors", adv)), False, False, 0)
@@ -715,6 +759,7 @@ class SettingsWindow(Gtk.ApplicationWindow):
         threading.Thread(target=work, daemon=True).start()
 
     def _after_apt(self):
+        clean_desktop_shortcuts()
         self._fill_apps()
         self._fill_dock()
         C.apply_dock(dict(self.s))

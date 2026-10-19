@@ -123,8 +123,12 @@ TB_H = 34
 BTN_W = 46
 
 
+_K = 1.0  # window-decoration scale (1 = normal, 2 = high-DPI)
+
+
 def _svg(w, h, body):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+    sw, sh = max(1, round(w * _K)), max(1, round(h * _K))
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{sw}" height="{sh}" '
             f'viewBox="0 0 {w} {h}">{body}</svg>\n')
 
 
@@ -145,6 +149,16 @@ def _glyph(kind, color):
     if kind in ("shade", "stick"):
         return f'<circle cx="{cx}" cy="{cy}" r="2.5" fill="{color}"/>'
     return f'<circle cx="{cx}" cy="{cy}" r="2.5" stroke="{color}" fill="none"/>'
+
+
+def write_xfwm4_scaled(dest, mode, scale):
+    """Window decorations drawn larger for high-DPI screens."""
+    global _K
+    _K = scale
+    try:
+        write_xfwm4(dest, mode)
+    finally:
+        _K = 1.0
 
 
 def write_xfwm4(dest, mode):

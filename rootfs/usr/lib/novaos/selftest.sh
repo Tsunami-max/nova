@@ -23,6 +23,10 @@ say "BEGIN $(date +%T) kernel=$(uname -r)"
 say "theme=$(xfconf-query -c xsettings -p /Net/ThemeName) icons=$(xfconf-query -c xsettings -p /Net/IconThemeName) wm=$(xfconf-query -c xfwm4 -p /general/theme)"
 say "wallpaper=$(xfconf-query -c xfce4-desktop -l -v | grep last-image | head -1 | awk '{print $2}')"
 say "picom=$(pgrep -x picom >/dev/null && echo running || echo stopped) resolution=$(xrandr | grep '\*' | awk '{print $1}' | head -1)"
+say "gl=$(/usr/lib/novaos/gl-check.sh) renderer=$(cat "${XDG_RUNTIME_DIR:-/tmp}/novaos-gl-renderer" 2>/dev/null)"
+say "dns: resolv.conf=$(readlink /etc/resolv.conf) resolved=$(systemctl is-active systemd-resolved) servers=$(resolvectl dns 2>/dev/null | tr '\n' ' ' | cut -c1-160)"
+say "dns-lookup youtube.com: $(getent hosts youtube.com | head -1 || true)"
+say "dock plugins=$(xfconf-query -c xfce4-panel -p /panels/panel-2/plugin-ids 2>/dev/null | grep -c '^[0-9]') scale=$(xfconf-query -c xsettings -p /Xft/DPI)dpi"
 say "SHOT desktop"
 sleep 6
 

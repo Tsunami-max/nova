@@ -65,9 +65,14 @@ EOF
 # --- application menu polish -----------------------------------------------------------
 mkdir -p /usr/local/share/applications
 rename_app() {  # rename_app <desktop file> <new name>
-	local src="/usr/share/applications/$1"
+	local src="/usr/share/applications/$1" dst="/usr/local/share/applications/$1" bin
 	[ -f "$src" ] || return 0
-	sed "0,/^Name=.*/s//Name=$2/" "$src" | sed '/^Name\[/d' > "/usr/local/share/applications/$1"
+	sed "0,/^Name=.*/s//Name=$2/" "$src" | sed '/^Name\[/d' > "$dst"
+	# Hide the renamed copy automatically once its app is uninstalled.
+	if ! grep -q '^TryExec=' "$dst"; then
+		bin="$(sed -n 's/^Exec=//p' "$src" | head -1 | awk '{print $1}')"
+		[ -n "$bin" ] && sed -i "0,/^\[Desktop Entry\]/s##[Desktop Entry]\nTryExec=$bin#" "$dst"
+	fi
 }
 rename_app thunar.desktop "Files"
 # Main browser: Chromium when installed, otherwise GNOME Web.
@@ -75,7 +80,12 @@ BROWSER_DESKTOP=""
 for b in chromium.desktop chromium-browser.desktop org.gnome.Epiphany.desktop; do
 	if [ -f "/usr/share/applications/$b" ]; then BROWSER_DESKTOP="$b"; break; fi
 done
-[ -n "$BROWSER_DESKTOP" ] && rename_app "$BROWSER_DESKTOP" "Web Browser"
+if [ -n "$BROWSER_DESKTOP" ]; then
+	rename_app "$BROWSER_DESKTOP" "Web Browser"
+	# Start it through nova-browser (GPU-aware flags, works after reinstalls).
+	sed -i -E 's#^Exec=[^ ]*(chromium|chromium-browser|epiphany)( |$)#Exec=nova-browser\2#' \
+		"/usr/local/share/applications/$BROWSER_DESKTOP"
+fi
 rename_app xfce4-terminal.desktop "Terminal"
 rename_app org.xfce.ristretto.desktop "Image Viewer"
 rename_app org.xfce.mousepad.desktop "Text Editor"
@@ -118,11 +128,11 @@ Version=1.0
 Encoding=UTF-8
 Type=X-XFCE-Helper
 X-XFCE-Category=WebBrowser
-X-XFCE-CommandsWithParameter=$BROWSER_BIN "%s"
+X-XFCE-CommandsWithParameter=/usr/bin/nova-browser "%s"
 Icon=novaos-browser
 Name=NovaOS Web Browser
-X-XFCE-Commands=$BROWSER_BIN
-X-XFCE-Binaries=$(basename "$BROWSER_BIN");
+X-XFCE-Commands=/usr/bin/nova-browser
+X-XFCE-Binaries=nova-browser;
 EOH
 	printf 'WebBrowser=novaos-browser\n' > /etc/xdg/xfce4/helpers.rc
 fi
@@ -135,8 +145,8 @@ x-scheme-handler/https=$BROWSER_DESKTOP
 x-scheme-handler/about=$BROWSER_DESKTOP
 EOM
 fi
-# Chromium settings for VMs: NovaOS welcome page, no GPU (software rendering
-# is more stable without 3D acceleration), no sign-in nag.
+# Chromium settings: NovaOS welcome page, no default-browser nag. (GPU or
+# software rendering is chosen per machine by /usr/bin/nova-browser.)
 for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
 	mkdir -p "$d"
 	cat > "$d/novaos.json" <<'EOP'
@@ -146,7 +156,6 @@ for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; 
   "ShowHomeButton": true,
   "RestoreOnStartup": 4,
   "RestoreOnStartupURLs": ["file:///usr/share/novaos/welcome/index.html"],
-  "HardwareAccelerationModeEnabled": false,
   "DefaultBrowserSettingEnabled": false,
   "MetricsReportingEnabled": false,
   "PromotionalTabsEnabled": false

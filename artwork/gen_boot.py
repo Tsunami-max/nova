@@ -221,7 +221,7 @@ def logos():
     wordmark(os.path.join(LOGO_DIR, "novaos-wordmark-white.png"), 96)
     wordmark(os.path.join(LOGO_DIR, "novaos-wordmark-dark.png"), 96, "#151935")
     # LightDM / installer backdrop (no logo, the greeter draws its own UI)
-    boot_background(os.path.join(ROOT, "usr/share/backgrounds/novaos/nova-login.jpg"), 2560, 1600, False)
+    boot_background(os.path.join(ROOT, "usr/share/novaos/login-background.jpg"), 2560, 1600, False)
 
 
 if __name__ == "__main__":

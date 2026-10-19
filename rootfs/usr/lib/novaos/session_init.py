@@ -53,10 +53,25 @@ def main():
     r = C.run("systemd-detect-virt", "-q", "--vm")
     if r and r.returncode == 0:
         in_vm = True
-    if first and in_vm:
-        # VMs have no 3D acceleration: start with effects off for smoothness.
+    gpu = C.gl_accelerated()
+    if first and in_vm and not gpu:
+        # No 3D acceleration (UTM without "Hardware OpenGL Acceleration"):
+        # start with effects off so windows and menus stay smooth.
         s["effects"] = "off"
         s["transparency"] = False
+    if first and in_vm and not gpu and not s.get("resolution"):
+        # Without a GPU every pixel is drawn by the processor; very large
+        # (Retina) screens make everything lag, so start at 1920 wide at most.
+        name, info = C.primary_output()
+        try:
+            w = int(((info or {}).get("current") or "0x0").split("x")[0])
+        except ValueError:
+            w = 0
+        if w > 1920:
+            for m in ("1920x1200", "1920x1080", "1680x1050", "1600x900", "1440x900", "1280x800"):
+                if m in (info or {}).get("modes", []):
+                    s["resolution"] = m
+                    break
     if first:
         C.save(s)
     # Wait for xfconfd / xfsettingsd to be up before applying settings.

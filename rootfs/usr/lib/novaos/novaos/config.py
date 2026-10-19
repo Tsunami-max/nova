@@ -35,6 +35,7 @@ DEFAULTS = {
     "dock_position": "bottom",      # bottom | left | right
     "dock_icon_size": 48,
     "dock_autohide": "never",       # never | smart | always
+    "wallpaper_cycle": 0,           # minutes between wallpaper changes, 0 = off
 }
 
 DEFAULT_DOCK = ["thunar.desktop", "@browser", "xfce4-terminal.desktop", "novaos-notes.desktop",
@@ -145,12 +146,13 @@ def apply_theme(s, force_reload=False):
     ensure_theme(mode, accent)
     name = theme_name(mode)
     icons = "NovaOS-Dark" if mode == "dark" else "NovaOS"
+    wm = wm_theme(s)
     if force_reload:
         _reload_named("xsettings", "/Net/ThemeName", name, "Materia-compact")
-        _reload_named("xfwm4", "/general/theme", name, "Default")
+        _reload_named("xfwm4", "/general/theme", wm, "Default")
     else:
         xfconf_set("xsettings", "/Net/ThemeName", "string", name)
-        xfconf_set("xfwm4", "/general/theme", "string", name)
+        xfconf_set("xfwm4", "/general/theme", "string", wm)
     xfconf_set("xsettings", "/Net/IconThemeName", "string", icons)
     # GTK4 / libadwaita applications follow the GNOME colour-scheme key.
     gsettings("org.gnome.desktop.interface", "color-scheme",
@@ -190,10 +192,33 @@ def apply_wallpaper(s):
                 p = f"/backdrop/screen0/monitor{out}/workspace0/last-image"
                 if p not in props:
                     props.append(p)
+    minutes = int(s.get("wallpaper_cycle") or 0)
     for p in props:
         base = p.rsplit("/", 1)[0]
         xfconf_set("xfce4-desktop", base + "/image-style", "int", 5)  # zoomed
         xfconf_set("xfce4-desktop", base + "/last-image", "string", path)
+        # Slideshow: xfdesktop cycles through the pictures in the same folder.
+        xfconf_set("xfce4-desktop", base + "/backdrop-cycle-enable", "bool", minutes > 0)
+        if minutes > 0:
+            xfconf_set("xfce4-desktop", base + "/backdrop-cycle-period", "int", 1)  # minutes
+            xfconf_set("xfce4-desktop", base + "/backdrop-cycle-timer", "uint", minutes)
+            xfconf_set("xfce4-desktop", base + "/backdrop-cycle-random-order", "bool", True)
+
+
+def gl_accelerated():
+    """True when the (virtual) graphics card has real 3D acceleration."""
+    r = run("/usr/lib/novaos/gl-check.sh")
+    return bool(r and r.stdout.strip() == "yes")
+
+
+def gl_renderer():
+    p = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "novaos-gl-renderer")
+    gl_accelerated()
+    try:
+        with open(p) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
 
 
 def picom_running():
@@ -208,8 +233,23 @@ def apply_effects(s):
         xfconf_set("xfwm4", "/general/use_compositing", "bool", False)
         return "off"
     xfconf_set("xfwm4", "/general/use_compositing", "bool", False)
+    gpu = gl_accelerated()
+    if level == "full" and not gpu:
+        level = "balanced"   # blur and rounded corners need a GPU
     for attempt in ([level, "balanced"] if level == "full" else [level]):
         conf = os.path.join(PICOM_TEMPLATES, attempt + ".conf")
+        if gpu and attempt == "balanced":
+            # With 3D acceleration use the OpenGL backend with vsync: smoother.
+            try:
+                with open(conf) as f:
+                    text = f.read()
+                text = text.replace('backend = "xrender";', 'backend = "glx";')
+                text = text.replace("vsync = false;", "vsync = true;")
+                conf = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "novaos-picom.conf")
+                with open(conf, "w") as f:
+                    f.write(text)
+            except OSError:
+                pass
         time.sleep(0.3)
         subprocess.Popen(["picom", "--config", conf], stdout=subprocess.DEVNULL,
                          stderr=subprocess.DEVNULL, start_new_session=True)
@@ -300,8 +340,38 @@ def auto_scale():
     return 100
 
 
+def current_scale(s):
+    return s.get("scale") or auto_scale()
+
+
+def wm_theme(s):
+    """Window-decoration theme: the normal one, or a larger copy for scales above 100 %."""
+    base = theme_name(s["mode"])
+    scale = current_scale(s)
+    if scale <= 100:
+        return base
+    name = "%s-%d" % (base, scale)
+    dest = os.path.join(USER_THEMES, name)
+    stamp = os.path.join(dest, ".nova-accent")
+    try:
+        with open(stamp) as f:
+            if f.read().strip() == s["accent"].lower():
+                return name
+    except OSError:
+        pass
+    try:
+        shutil.rmtree(dest, ignore_errors=True)
+        os.makedirs(dest, exist_ok=True)
+        themegen.write_xfwm4_scaled(dest, s["mode"], scale / 100.0)
+        with open(stamp, "w") as f:
+            f.write(s["accent"].lower())
+        return name
+    except OSError:
+        return base
+
+
 def apply_scale(s):
-    scale = s.get("scale") or auto_scale()
+    scale = current_scale(s)
     if scale >= 200:
         factor, dpi = 2, 96
     else:
@@ -309,6 +379,7 @@ def apply_scale(s):
     xfconf_set("xsettings", "/Gdk/WindowScalingFactor", "int", factor)
     xfconf_set("xsettings", "/Xft/DPI", "int", dpi)
     xfconf_set("xsettings", "/Gtk/CursorThemeSize", "int", int(24 * scale / 100))
+    xfconf_set("xfwm4", "/general/theme", "string", wm_theme(s))
     return scale
 
 
@@ -340,11 +411,28 @@ APP_DIRS = [os.path.expanduser("~/.local/share/applications"), "/usr/local/share
             "/usr/share/applications"]
 
 
+def _tryexec_ok(path):
+    """False when a .desktop file's TryExec program is not installed."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.startswith("TryExec="):
+                    prog = line.split("=", 1)[1].strip()
+                    if os.path.isabs(prog):
+                        return os.path.exists(prog)
+                    return shutil.which(prog) is not None
+                if line.startswith("[") and not line.startswith("[Desktop Entry]"):
+                    break
+    except OSError:
+        return False
+    return True
+
+
 def find_desktop(app_id):
     for d in APP_DIRS:
         p = os.path.join(d, app_id)
         if os.path.exists(p):
-            return p
+            return p if _tryexec_ok(p) else None
     return None
 
 
@@ -417,22 +505,35 @@ def apply_dock(s, restart=True):
 
 
 def _panel_pids():
-    r = subprocess.run(["pgrep", "-x", "xfce4-panel"], capture_output=True, text=True)
-    return set(r.stdout.split())
+    """PIDs of running (not zombie) xfce4-panel processes of this user."""
+    pids = set()
+    r = subprocess.run(["pgrep", "-u", str(os.getuid()), "-x", "xfce4-panel"],
+                       capture_output=True, text=True)
+    for pid in r.stdout.split():
+        try:
+            with open("/proc/%s/stat" % pid) as f:
+                state = f.read().rsplit(")", 1)[1].split()[0]
+        except (OSError, IndexError):
+            continue
+        if state not in ("Z", "X"):
+            pids.add(pid)
+    return pids
 
 
 def restart_panel():
-    """Restart the panel so a new dock layout loads. Quit it, then start a fresh one
-    unless the session manager already brought it back."""
-    run("xfce4-panel", "--quit")
-    for _ in range(20):
-        if not _panel_pids():
-            break
-        time.sleep(0.25)
-    time.sleep(1.5)
-    if not _panel_pids():
-        subprocess.Popen(["xfce4-panel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                         stdin=subprocess.DEVNULL, start_new_session=True)
+    """Reload the panel so a new dock layout shows up."""
+    before = _panel_pids()
+    if before:
+        run("xfce4-panel", "--restart")
+        for _ in range(24):
+            time.sleep(0.25)
+            now = _panel_pids()
+            if now and now != before:
+                return
+        if _panel_pids():
+            return
+    subprocess.Popen(["xfce4-panel"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     stdin=subprocess.DEVNULL, start_new_session=True)
 
 
 # ---------------------------------------------------------------------------

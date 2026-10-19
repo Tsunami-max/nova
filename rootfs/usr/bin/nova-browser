@@ -1,0 +1,22 @@
+#!/bin/sh
+# NovaOS "Web Browser": starts whichever browser is installed, with graphics
+# settings that suit this machine (GPU when available, smooth software
+# rendering otherwise). If no browser is installed, opens Settings > Apps.
+BIN=""
+for b in chromium chromium-browser epiphany-browser epiphany firefox; do
+	if command -v "$b" >/dev/null 2>&1; then BIN="$b"; break; fi
+done
+if [ -z "$BIN" ]; then
+	exec nova-settings --page apps
+fi
+case "$BIN" in
+	chromium*)
+		if [ "$(/usr/lib/novaos/gl-check.sh)" = yes ]; then
+			set -- --ignore-gpu-blocklist --enable-gpu-rasterization "$@"
+		else
+			# No 3D acceleration: software compositing is smoother and avoids
+			# drawing glitches in virtual machines.
+			set -- --disable-gpu --disable-gpu-compositing "$@"
+		fi ;;
+esac
+exec "$BIN" "$@"

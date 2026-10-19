@@ -53,11 +53,24 @@ than the Intel version. In UTM:
 
 1. **+** → **Virtualize** (not Emulate) → **Linux**.
 2. Leave "Use Apple Virtualization" **off**. **Browse…** → pick `NovaOS-arm64.iso` → **Continue**.
-3. Memory **4096 MB** or more, CPU cores **4** → **Continue**.
+3. Memory **4096 MB** or more, CPU cores **4**, and tick **Hardware OpenGL
+   Acceleration** → **Continue**.
 4. Storage 25 GB → **Continue** → **Continue** → **Save** → **▶**.
+5. Double-click **Install NovaOS**, install, shut down, then clear the ISO
+   (VM settings → the USB/CD drive → **Clear**) and start again. The installed
+   system is much faster than the live CD.
 
-It includes Chromium (the open-source base of Google Chrome) as the web
-browser, with video codecs for YouTube.
+**Graphics acceleration** makes high resolutions, window effects and video
+smooth. NovaOS detects it by itself (Settings → Display shows *On* or *Off*).
+For an existing VM: shut NovaOS down → VM settings → **Display** → choose an
+*Emulated Display Card* marked **GPU Supported** (`virtio-gpu-gl-pci`).
+Without it, NovaOS starts with effects off and at most 1920 pixels wide so it
+stays responsive.
+
+The web browser is Chromium (the open-source base of Google Chrome), with
+video codecs for YouTube. It works out of the box: DNS (looking up website
+names) is handled by systemd-resolved with public fallback servers. It can be
+uninstalled or reinstalled from **Settings → Apps**.
 
 ## 3. Run the Intel version in UTM (NovaOS.iso, step by step)
 
@@ -136,13 +149,14 @@ A kernel update with `sudo apt upgrade` brings the full driver set back.
 ### Settings app
 
 * **Personalization**: Dark / Light mode, 11 accent colours, 11 4K wallpapers (or your
-  own picture), visual effects (Off / Balanced / Full), taskbar transparency, text size,
+  own picture), automatic wallpaper slideshow, visual effects (Off / Balanced / Full), taskbar transparency, text size,
   window-button side (left like macOS / right like Windows) and desktop icon size.
 * **Taskbar**: size, show app names, top or bottom of the screen.
 * **Dock**: pick, reorder and remove the pinned apps; bottom / left / right; icon size;
   auto-hide.
-* **Display**: resolution, refresh rate (defaults to the highest your screen offers) and
-  scale 100–200 % for high-resolution (1440p / 4K / Retina) screens.
+* **Display**: resolution, refresh rate (defaults to the highest your screen offers),
+  scale 100–200 % for high-resolution (1440p / 4K / Retina) screens (window title bars
+  grow too), and whether graphics acceleration is active.
 * **Apps**: uninstall apps (including the web browser) and install new ones
   (one-click VLC, GIMP, LibreOffice, Chromium, Thunderbird, or search everything).
 * **Keyboard**: layout (e.g. Belgian, French, German, US…).
