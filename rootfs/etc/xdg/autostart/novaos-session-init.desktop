@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=NovaOS session setup
-Comment=Applies NovaOS appearance settings at login
-Exec=nova-session-init
-OnlyShowIn=XFCE;
-NoDisplay=true
-X-GNOME-Autostart-Phase=Initialization

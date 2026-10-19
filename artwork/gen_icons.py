@@ -352,22 +352,28 @@ def main():
     for app, (c1, c2, g) in APPS.items():
         _, content = tile(app, c1, c2, GLYPHS[g])
         write(os.path.join(apps_dir, app + ".svg"), content)
-        for alias in ALIASES.get(app, []):
-            link(app + ".svg", os.path.join(apps_dir, alias + ".svg"))
+        # NovaOS 2: third-party apps keep their consistent Papirus icons;
+        # the NovaOS tiles are only used by NovaOS's own apps.
+        if os.environ.get("NOVA_ICON_ALIASES") == "1":
+            for alias in ALIASES.get(app, []):
+                link(app + ".svg", os.path.join(apps_dir, alias + ".svg"))
 
+    if os.environ.get("NOVA_PLACES") != "1":
+        EMBLEMS.clear()
     for name, emb in EMBLEMS.items():
         write(os.path.join(places_dir, name + ".svg"), folder(emb))
         for alias in PLACE_ALIASES.get(name, []):
             link(name + ".svg", os.path.join(places_dir, alias + ".svg"))
-    write(os.path.join(places_dir, "folder-open.svg"), folder("", open_=True))
-    link("folder-open.svg", os.path.join(places_dir, "folder-drag-accept.svg"))
-    write(os.path.join(places_dir, "user-trash.svg"), trash(False))
-    write(os.path.join(places_dir, "user-trash-full.svg"), trash(True))
-    link("user-trash.svg", os.path.join(places_dir, "trashcan_empty.svg"))
-    link("user-trash-full.svg", os.path.join(places_dir, "trashcan_full.svg"))
+    if os.environ.get("NOVA_PLACES") == "1":
+        write(os.path.join(places_dir, "folder-open.svg"), folder("", open_=True))
+        link("folder-open.svg", os.path.join(places_dir, "folder-drag-accept.svg"))
+        write(os.path.join(places_dir, "user-trash.svg"), trash(False))
+        write(os.path.join(places_dir, "user-trash-full.svg"), trash(True))
+        link("user-trash.svg", os.path.join(places_dir, "trashcan_empty.svg"))
+        link("user-trash-full.svg", os.path.join(places_dir, "trashcan_full.svg"))
 
-    for theme, inherits in (("NovaOS", "Papirus,Adwaita,hicolor"),
-                            ("NovaOS-Dark", "Papirus-Dark,Adwaita,hicolor")):
+    for theme, inherits in (("NovaOS", "Papirus-Light,Papirus,breeze,hicolor"),
+                            ("NovaOS-Dark", "Papirus-Dark,breeze-dark,hicolor")):
         tdir = os.path.join(ICON_ROOT, theme)
         os.makedirs(tdir, exist_ok=True)
         if theme != "NovaOS":

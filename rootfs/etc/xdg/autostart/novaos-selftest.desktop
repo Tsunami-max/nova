@@ -3,5 +3,5 @@ Type=Application
 Name=NovaOS self-test
 Comment=Automated test hook; does nothing unless booted with novaos.selftest
 Exec=/usr/lib/novaos/selftest.sh
-OnlyShowIn=XFCE;
+OnlyShowIn=KDE;
 NoDisplay=true

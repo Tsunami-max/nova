@@ -1,0 +1,12 @@
+#!/bin/sh
+# NovaOS: in virtual machines, turn off NIC segmentation offloads and use a
+# slightly smaller MTU. This avoids stalled HTTPS downloads on UTM/QEMU
+# shared networking ("only some websites load").
+IFACE="$1"; ACTION="$2"
+[ "$ACTION" = up ] || exit 0
+systemd-detect-virt -q --vm || exit 0
+case "$IFACE" in lo|docker*|veth*|br*) exit 0 ;; esac
+command -v ethtool >/dev/null 2>&1 && ethtool -K "$IFACE" tso off gso off gro off 2>/dev/null
+MTU="$(cat /sys/class/net/$IFACE/mtu 2>/dev/null || echo 0)"
+[ "$MTU" -gt 1400 ] && ip link set dev "$IFACE" mtu 1400 2>/dev/null
+exit 0

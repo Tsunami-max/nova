@@ -1,2 +1,0 @@
-#!/bin/sh
-exec python3 /usr/lib/novaos/settings_app.py "$@"

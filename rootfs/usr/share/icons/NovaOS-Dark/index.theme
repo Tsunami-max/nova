@@ -1,7 +1,7 @@
 [Icon Theme]
 Name=NovaOS-Dark
 Comment=Original NovaOS icons (apps, places); everything else from Papirus
-Inherits=Papirus-Dark,Adwaita,hicolor
+Inherits=Papirus-Dark,breeze-dark,hicolor
 Example=folder
 Directories=scalable/apps,scalable/places
 

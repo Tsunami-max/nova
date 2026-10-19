@@ -1,0 +1,13 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [ { "Name": "NovaOS" } ],
+        "Category": "",
+        "Description": "NovaOS: dark, centred taskbar, violet accent",
+        "Id": "org.novaos.desktop",
+        "License": "GPL-2.0+",
+        "Name": "NovaOS",
+        "Version": "2.0"
+    },
+    "X-Plasma-APIVersion": "2"
+}

@@ -1,7 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=NovaOS desktop guard
-Comment=Restarts the desktop or panel if they crash
-Exec=/usr/lib/novaos/desktop-guard.sh
-OnlyShowIn=XFCE;
-NoDisplay=true

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS session helper
+Exec=/usr/lib/novaos/welcome.sh
+NoDisplay=true
+X-KDE-autostart-phase=2

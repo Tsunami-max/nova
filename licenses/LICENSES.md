@@ -13,34 +13,30 @@ Canonical; "Ubuntu" is a trademark of Canonical Ltd.
 
 | Component | Licence |
 |---|---|
-| NovaOS Settings, Notes, session/theme scripts (`/usr/lib/novaos`) | MIT |
+| NovaOS Notes, session scripts (`/usr/lib/novaos`), desktop layout | MIT |
 | Build scripts (`build.sh`, `scripts/`, `artwork/*.py`) | MIT |
 | NovaOS logo, icons (`/usr/share/icons/NovaOS*`), wallpapers, GRUB/Plymouth artwork | CC BY-SA 4.0 |
-| NovaOS-Dark / NovaOS-Light GTK themes | GPL-2.0 (derived from Materia) |
+| NovaOS Dark / Light colour schemes | GPL-2.0+ (derived from Breeze) |
 
 ## Main bundled applications
 
 | App in NovaOS | Upstream project | Licence |
 |---|---|---|
-| Desktop shell (panel, window manager, desktop, session) | XFCE 4.18 | GPL-2.0+ / LGPL-2.0+ |
-| Files | Thunar | GPL-2.0+ |
-| Web Browser | GNOME Web (Epiphany), WebKitGTK | GPL-3.0+ / LGPL-2.1+, BSD |
-| Calculator | GNOME Calculator | GPL-3.0+ |
-| Terminal | xfce4-terminal | GPL-2.0+ |
-| Image Viewer | Ristretto | GPL-2.0+ |
-| Text Editor | Mousepad | GPL-2.0+ |
-| App Launcher | xfce4-appfinder | GPL-2.0+ |
-| Task Manager | xfce4-taskmanager | GPL-2.0+ |
-| Volume Mixer | PulseAudio Volume Control (pavucontrol) | GPL-2.0+ |
+| Desktop (panel, window manager, settings) | KDE Plasma 5.27, KWin, Breeze | GPL-2.0+ / LGPL-2.1+ |
+| Login screen | SDDM | GPL-2.0+ |
+| App Store | KDE Discover, PackageKit, Flatpak | GPL-2.0+ / LGPL-2.1+ |
+| Web Browser | Chromium (xtradeb build) | BSD-3-Clause and others |
+| Writer, Impress, Calc | LibreOffice | MPL-2.0 |
+| Paint | KolourPaint | BSD-2-Clause / LGPL |
+| Files, Terminal, Photos, Text Editor, Calculator | Dolphin, Konsole, Gwenview, KWrite, KCalc | GPL-2.0+ |
+| PDF viewer, archives, screenshots | Okular, Ark, Spectacle | GPL-2.0+ |
+| Video Player | VLC | GPL-2.0+ |
+| Games | KPatience, KMines, KBlocks, KMahjongg | GPL-2.0+ |
+| Wallpapers | plasma-workspace-wallpapers | various free licences (see package copyright) |
 | Installer | Calamares | GPL-3.0+ |
-| Compositor (effects) | picom | MPL-2.0 / MIT |
-| Login screen | LightDM, lightdm-gtk-greeter | GPL-3.0+ |
-| Boot splash | Plymouth | GPL-2.0+ |
-| Boot loader | GNU GRUB 2 | GPL-3.0+ |
-| Kernel | Linux 6.8 (Ubuntu) | GPL-2.0 |
-| Base GTK theme | Materia | GPL-2.0 |
-| Fallback icons | Papirus | GPL-3.0 |
-| Fonts | Inter, JetBrains Mono (SIL OFL 1.1); Noto, DejaVu | OFL-1.1 / Bitstream Vera licence |
+| Boot splash / boot loader / kernel | Plymouth / GRUB 2 / Linux 6.8 | GPL |
+| Icons | Papirus | GPL-3.0 |
+| Fonts | Inter, JetBrains Mono (OFL-1.1), Noto Color Emoji (OFL-1.1), DejaVu, Carlito/Caladea (OFL-1.1) | as listed |
 
 Source code for all Ubuntu packages is available from the Ubuntu archive
 (`apt-get source <package>`), as required by the GPL.

@@ -1,3 +1,0 @@
-#!/bin/sh
-mkdir -p "$HOME/.cache"
-exec python3 /usr/lib/novaos/session_init.py "$@" >"$HOME/.cache/novaos-session-init.log" 2>&1

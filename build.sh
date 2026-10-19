@@ -20,7 +20,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARCH="${ARCH:-$(dpkg --print-architecture)}"
 SUITE="noble"
-VERSION="1.0"
+VERSION="2.0"
 WORK="${WORK:-$HERE/work}"
 OUT="${OUT:-$HERE/out}"
 CHROOT="$WORK/chroot"
@@ -100,32 +100,37 @@ PKGS_COMMON=(
 	keyboard-configuration console-setup kbd casper discover laptop-detect
 	initramfs-tools zstd squashfs-tools dosfstools e2fsprogs parted
 	network-manager systemd-resolved iputils-ping curl nano less htop bash-completion pciutils
-	dbus-x11 dbus-user-session policykit-1 udisks2 acpid
+	ethtool dbus-x11 dbus-user-session policykit-1 udisks2 acpid
 	spice-vdagent qemu-guest-agent
 	# --- graphics stack ---
 	xserver-xorg-core xserver-xorg-input-libinput xserver-xorg-video-fbdev
 	xinit xauth x11-xserver-utils x11-utils x11-xkb-utils xdotool
-	mesa-utils libgl1-mesa-dri
+	mesa-utils libgl1-mesa-dri mesa-vulkan-drivers
 	# --- boot splash + login ---
-	plymouth plymouth-label lightdm lightdm-gtk-greeter
-	# --- XFCE base, customised into the NovaOS desktop ---
-	xfce4-session xfwm4 xfce4-panel xfdesktop4 xfce4-settings xfconf
-	xfce4-whiskermenu-plugin xfce4-pulseaudio-plugin xfce4-notifyd
-	xfce4-appfinder xfce4-screenshooter xfce4-taskmanager
-	libxfce4ui-utils exo-utils picom
-	network-manager-gnome mate-polkit at-spi2-core
-	pipewire pipewire-pulse wireplumber pavucontrol alsa-utils
+	plymouth plymouth-label sddm sddm-theme-breeze kde-config-sddm
+	# --- KDE Plasma desktop, styled as NovaOS ---
+	plasma-desktop plasma-workspace kwin-x11 breeze breeze-gtk-theme breeze-cursor-theme
+	kde-config-gtk-style plasma-nm plasma-pa powerdevil kscreen systemsettings
+	kinfocenter plasma-systemmonitor kde-cli-tools libkf5config-bin kmenuedit
+	polkit-kde-agent-1 xdg-desktop-portal-kde kdialog khotkeys
+	plasma-widgets-addons plasma-wallpapers-addons plasma-workspace-wallpapers
+	kio-extras ffmpegthumbs kdegraphics-thumbnailers
+	pipewire pipewire-pulse wireplumber alsa-utils
 	dconf-cli dconf-gsettings-backend gsettings-desktop-schemas
 	xdg-user-dirs xdg-utils desktop-file-utils shared-mime-info
-	xdg-desktop-portal xdg-desktop-portal-gtk
+	# --- App Store: Discover with Ubuntu packages and Flathub ---
+	plasma-discover plasma-discover-backend-flatpak packagekit flatpak
 	# --- built-in applications ---
-	thunar thunar-volman tumbler gvfs gvfs-fuse
-	xfce4-terminal ristretto mousepad epiphany-browser gnome-calculator
+	dolphin konsole kwrite kcalc gwenview okular ark kde-spectacle kolourpaint vlc
+	libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-kf5
+	libreoffice-style-breeze fonts-crosextra-carlito fonts-crosextra-caladea
+	kpat kmines kblocks kmahjongg
+	epiphany-browser
 	gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
 	python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-cairo
 	# --- look & feel ---
-	materia-gtk-theme papirus-icon-theme gtk2-engines-pixbuf librsvg2-common adwaita-icon-theme
-	fonts-inter fonts-jetbrains-mono
+	papirus-icon-theme librsvg2-common adwaita-icon-theme
+	fonts-inter fonts-jetbrains-mono fonts-noto-color-emoji
 	fonts-dejavu-core
 	# --- installer ---
 	calamares rsync efibootmgr grub2-common

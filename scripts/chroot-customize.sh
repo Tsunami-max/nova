@@ -31,17 +31,45 @@ echo "NovaOS $NOVA_VERSION \\n \\l" > /etc/issue
 echo "NovaOS $NOVA_VERSION" > /etc/issue.net
 echo "novaos" > /etc/hostname
 
-# --- themes, icons, fonts -----------------------------------------------------
-python3 - <<'EOF'
-import sys
-sys.path.insert(0, "/usr/lib/novaos")
-from novaos import themegen, palette
-for mode in ("dark", "light"):
-    print("theme:", themegen.generate(mode, palette.DEFAULT_ACCENT, "/usr/share/themes"))
-EOF
-for t in NovaOS NovaOS-Dark; do gtk-update-icon-cache -f -t "/usr/share/icons/$t" || true; done
-gtk-update-icon-cache -f -t /usr/share/icons/Papirus || true
-gtk-update-icon-cache -f -t /usr/share/icons/Papirus-Dark || true
+# --- look & feel (KDE Plasma) ---------------------------------------------------
+# NovaOS colour schemes: Breeze with NovaOS's deep blue-black surfaces and
+# violet accent.
+nova_colors() {  # nova_colors <source scheme> <dest file> <name>
+	sed -e 's/61,174,233/124,136,255/g' -e 's/30,87,116/58,64,140/g' -e 's/29,153,243/140,155,255/g' \
+	    -e 's/^Name=.*/Name='"$3"'/' "$1" > "$2"
+}
+nova_colors /usr/share/color-schemes/BreezeDark.colors /usr/share/color-schemes/NovaOSDark.colors "NovaOS Dark"
+sed -i -e 's/=49,54,59/=32,35,48/g' -e 's/=42,46,50/=26,29,40/g' -e 's/=35,38,41/=22,25,34/g' \
+	-e 's/=27,30,32/=18,20,28/g' /usr/share/color-schemes/NovaOSDark.colors
+nova_colors /usr/share/color-schemes/BreezeLight.colors /usr/share/color-schemes/NovaOSLight.colors "NovaOS Light"
+sed -i 's/^LookAndFeelPackage=.*/LookAndFeelPackage=org.novaos.desktop/' /etc/xdg/kdeglobals
+# Full colour definitions as system defaults, so every app is dark from the
+# very first login (not only after the look-and-feel is applied).
+awk '/^\[/{keep = ($0 !~ /^\[(General|KDE)\]/)} keep' /usr/share/color-schemes/NovaOSDark.colors >> /etc/xdg/kdeglobals
+cat >> /etc/xdg/kdeglobals <<'EOK'
+
+[General]
+ColorScheme=NovaOSDark
+AccentColor=124,136,255
+BrowserApplication=PLACEHOLDER_BROWSER
+
+[Icons]
+Theme=NovaOS-Dark
+EOK
+# Login screen: Breeze with the NovaOS wallpaper.
+SHELLWP="$(ls -S /usr/share/wallpapers/Shell/contents/images/* 2>/dev/null | head -1)"
+if [ -d /usr/share/sddm/themes/breeze ]; then
+	cat > /usr/share/sddm/themes/breeze/theme.conf.user <<EOT
+[General]
+background=${SHELLWP:-/usr/share/novaos/login-background.jpg}
+type=image
+EOT
+fi
+# Look-and-feel preview picture.
+[ -n "$SHELLWP" ] && command -v convert >/dev/null && \
+	convert "$SHELLWP" -resize 600x338^ -gravity center -extent 600x338 \
+	/usr/share/plasma/look-and-feel/org.novaos.desktop/contents/previews/preview.png 2>/dev/null || true
+for t in NovaOS NovaOS-Dark Papirus Papirus-Dark; do gtk-update-icon-cache -f -t "/usr/share/icons/$t" || true; done
 glib-compile-schemas /usr/share/glib-2.0/schemas
 fc-cache -f >/dev/null
 
@@ -74,7 +102,6 @@ rename_app() {  # rename_app <desktop file> <new name>
 		[ -n "$bin" ] && sed -i "0,/^\[Desktop Entry\]/s##[Desktop Entry]\nTryExec=$bin#" "$dst"
 	fi
 }
-rename_app thunar.desktop "Files"
 # Main browser: Chromium when installed, otherwise GNOME Web.
 BROWSER_DESKTOP=""
 for b in chromium.desktop chromium-browser.desktop org.gnome.Epiphany.desktop; do
@@ -86,56 +113,36 @@ if [ -n "$BROWSER_DESKTOP" ]; then
 	sed -i -E 's#^Exec=[^ ]*(chromium|chromium-browser|epiphany)( |$)#Exec=nova-browser\2#' \
 		"/usr/local/share/applications/$BROWSER_DESKTOP"
 fi
-rename_app xfce4-terminal.desktop "Terminal"
-rename_app org.xfce.ristretto.desktop "Image Viewer"
-rename_app org.xfce.mousepad.desktop "Text Editor"
-rename_app xfce4-taskmanager.desktop "Task Manager"
-rename_app xfce4-screenshooter.desktop "Screenshot"
-rename_app xfce4-appfinder.desktop "App Launcher"
-rename_app xfce-settings-manager.desktop "Advanced Settings"
-rename_app pavucontrol.desktop "Volume Mixer"
+rename_app org.kde.discover.desktop "App Store"
+rename_app libreoffice-writer.desktop "Writer (Word documents)"
+rename_app libreoffice-impress.desktop "Impress (PowerPoint slides)"
+rename_app libreoffice-calc.desktop "Calc (Excel spreadsheets)"
+rename_app org.kde.kolourpaint.desktop "Paint"
+rename_app org.kde.dolphin.desktop "Files"
+rename_app org.kde.konsole.desktop "Terminal"
+rename_app org.kde.kwrite.desktop "Text Editor"
+rename_app org.kde.kcalc.desktop "Calculator"
+rename_app org.kde.gwenview.desktop "Photos"
+rename_app org.kde.kinfocenter.desktop "System Info"
+rename_app org.kde.spectacle.desktop "Screenshot"
+rename_app org.kde.plasma-systemmonitor.desktop "Task Manager"
+rename_app systemsettings.desktop "Settings"
+rename_app vlc.desktop "Video Player"
 hide_app() {
 	local src="/usr/share/applications/$1"
 	[ -f "$src" ] || return 0
 	{ grep -v '^NoDisplay=' "$src"; } > "/usr/local/share/applications/$1"
 	sed -i '0,/^\[Desktop Entry\]/s//[Desktop Entry]\nNoDisplay=true/' "/usr/local/share/applications/$1"
 }
-for a in calamares.desktop picom.desktop xfce4-mail-reader.desktop \
-	vim.desktop python3.12.desktop \
-	htop.desktop org.kde.kded5.desktop org.kde.kwalletd5.desktop kcm_trash.desktop \
-	ktelnetservice5.desktop xfce4-about.desktop; do
+for a in calamares.desktop vim.desktop python3.12.desktop htop.desktop org.kde.kded5.desktop \
+	org.kde.kwalletd5.desktop kcm_trash.desktop ktelnetservice5.desktop \
+	org.gnome.Epiphany.desktop org.kde.kmenuedit.desktop libreoffice-startcenter.desktop \
+	libreoffice-xsltfilter.desktop org.kde.gwenview_importer.desktop; do
+	[ "$a" = "$BROWSER_DESKTOP" ] && continue
 	hide_app "$a"
 done
 update-desktop-database /usr/local/share/applications || true
 
-# Desktop shortcuts copied into each user's Desktop at first login.
-mkdir -p /usr/share/novaos/desktop
-for a in novaos-settings.desktop novaos-notes.desktop; do
-	cp "/usr/share/applications/$a" /usr/share/novaos/desktop/
-done
-for a in $BROWSER_DESKTOP xfce4-terminal.desktop; do
-	[ -f "/usr/local/share/applications/$a" ] && cp "/usr/local/share/applications/$a" /usr/share/novaos/desktop/
-done
-# Make it the default browser everywhere (panel launcher, links, xdg-open).
-# A NovaOS-specific helper so "Web Browser" never asks which app to use.
-BROWSER_BIN="$(command -v chromium || command -v chromium-browser || command -v epiphany || true)"
-mkdir -p /etc/xdg/xfce4 /usr/share/xfce4/helpers
-if [ -n "$BROWSER_BIN" ]; then
-	cat > /usr/share/xfce4/helpers/novaos-browser.desktop <<EOH
-[Desktop Entry]
-NoDisplay=true
-Version=1.0
-Encoding=UTF-8
-Type=X-XFCE-Helper
-X-XFCE-Category=WebBrowser
-X-XFCE-CommandsWithParameter=/usr/bin/nova-browser "%s"
-Icon=novaos-browser
-Name=NovaOS Web Browser
-X-XFCE-Commands=/usr/bin/nova-browser
-X-XFCE-Binaries=nova-browser;
-EOH
-	printf 'WebBrowser=novaos-browser\n' > /etc/xdg/xfce4/helpers.rc
-fi
 if [ -n "$BROWSER_DESKTOP" ]; then
 	cat > /etc/xdg/mimeapps.list <<EOM
 [Default Applications]
@@ -163,61 +170,25 @@ for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; 
 EOP
 done
 
-# picom is started by NovaOS settings, not by its own autostart entry.
-if ! grep -q '^Hidden=true' /etc/xdg/autostart/picom.desktop 2>/dev/null; then
-	echo "Hidden=true" >> /etc/xdg/autostart/picom.desktop
+# Taskbar pin + default browser point at the real browser entry.
+sed -i "s#PLACEHOLDER_BROWSER#${BROWSER_DESKTOP:-org.gnome.Epiphany.desktop}#g" \
+	/etc/xdg/kdeglobals \
+	/usr/share/plasma/look-and-feel/org.novaos.desktop/contents/layouts/org.kde.plasma.desktop-layout.js
+
+# --- App Store: Flathub ------------------------------------------------------------------
+if command -v flatpak >/dev/null 2>&1; then
+	if curl -fsSL --max-time 60 https://dl.flathub.org/repo/flathub.flatpakrepo -o /tmp/flathub.flatpakrepo; then
+		flatpak remote-add --system --if-not-exists flathub /tmp/flathub.flatpakrepo || true
+		mkdir -p /etc/flatpak/remotes.d
+		cp /tmp/flathub.flatpakrepo /etc/flatpak/remotes.d/flathub.flatpakrepo
+	else
+		echo "WARNING: could not download the Flathub description (offline build)"
+	fi
 fi
-# The MATE polkit agent excludes nothing relevant; keep only our XFCE entry.
-rm -f /etc/xdg/autostart/polkit-mate-authentication-agent-1.desktop
-
-# --- keyboard shortcuts --------------------------------------------------------------
-python3 - <<'EOF'
-import xml.etree.ElementTree as ET
-p = "/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-keyboard-shortcuts.xml"
-tree = ET.parse(p)
-root = tree.getroot()
-default = root.find("./property[@name='commands']/property[@name='default']")
-extra = {"<Super>i": "nova-settings", "<Super>n": "nova-notes", "<Super>t": "xfce4-terminal"}
-for key, cmd in extra.items():
-    for old in default.findall("property"):
-        if old.get("name") == key:
-            default.remove(old)
-    ET.SubElement(default, "property", {"name": key, "type": "string", "value": cmd})
-wm = root.find("./property[@name='xfwm4']/property[@name='default']")
-for old in wm.findall("property"):
-    if old.get("name") == "<Super>d":
-        wm.remove(old)
-ET.SubElement(wm, "property", {"name": "<Super>d", "type": "string", "value": "show_desktop_key"})
-tree.write(p, encoding="UTF-8", xml_declaration=True)
-EOF
-
-# --- session ------------------------------------------------------------------------------
-S=/etc/xdg/xfce4/xfconf/xfce-perchannel-xml/xfce4-session.xml
-python3 - "$S" <<'EOF'
-import sys, xml.etree.ElementTree as ET
-p = sys.argv[1]
-tree = ET.parse(p); root = tree.getroot()
-def ensure(parent, name, typ=None, value=None):
-    for c in parent.findall("property"):
-        if c.get("name") == name:
-            if value is not None:
-                c.set("type", typ); c.set("value", value)
-            return c
-    attrs = {"name": name, "type": typ or "empty"}
-    if value is not None:
-        attrs["value"] = value
-    return ET.SubElement(parent, "property", attrs)
-general = ensure(root, "general")
-ensure(general, "SaveOnExit", "bool", "false")
-shutdown = ensure(root, "shutdown")
-for k in ("ShowSuspend", "ShowHibernate", "ShowHybridSleep", "LockScreen"):
-    ensure(shutdown, k, "bool", "false")
-tree.write(p, encoding="UTF-8", xml_declaration=True)
-EOF
 
 # --- services -------------------------------------------------------------------------------
-echo /usr/sbin/lightdm > /etc/X11/default-display-manager
-systemctl enable lightdm.service || true
+echo /usr/bin/sddm > /etc/X11/default-display-manager
+systemctl enable sddm.service || true
 systemctl set-default graphical.target
 systemctl enable NetworkManager.service || true
 systemctl enable systemd-resolved.service || true
@@ -250,7 +221,7 @@ print("licence table:", len(rows), "packages")
 EOF
 
 
-# --- slimming (keeps the ISO small enough to download as one file) -----------
+# --- slimming: docs, man pages, rare translations, unused font weights -------
 cat > /etc/dpkg/dpkg.cfg.d/01-novaos-slim <<'EOF2'
 # Keep licence files, drop the rest of the docs, man pages and rare translations.
 path-exclude=/usr/share/doc/*
@@ -275,40 +246,9 @@ rm -rf /usr/share/man/* /usr/share/help/*
 find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
 	! -name 'en*' ! -name fr ! -name de ! -name es ! -name it ! -name nl ! -name 'pt*' ! -name ro \
 	-exec rm -rf {} +
-apt-get -y purge fonts-noto-core fonts-noto-color-emoji 2>/dev/null || true
 rm -rf /usr/share/icons/Papirus-Light /usr/share/icons/ePapirus /usr/share/icons/ePapirus-Dark \
 	/usr/share/icons/Humanity /usr/share/icons/Humanity-Dark \
 	/usr/share/icons/ubuntu-mono-dark /usr/share/icons/ubuntu-mono-light
-# Papirus: keep only the 24 px set plus symbolic icons. They are SVGs, so GTK
-# renders them sharply at every other size; this saves well over 100 MB.
-python3 - <<'PY'
-import os, re, shutil
-KEEP = ("24x24", "24x24@2x", "symbolic")
-for theme in ("Papirus", "Papirus-Dark"):
-    root = f"/usr/share/icons/{theme}"
-    idx = os.path.join(root, "index.theme")
-    if not os.path.exists(idx):
-        continue
-    for d in os.listdir(root):
-        p = os.path.join(root, d)
-        if (os.path.isdir(p) or os.path.islink(p)) and d not in KEEP and re.match(r"^\d+x\d+", d):
-            if os.path.islink(p):
-                os.remove(p)
-            else:
-                shutil.rmtree(p)
-    text = open(idx).read()
-    m = re.search(r"^Directories=(.*)$", text, re.M)
-    dirs = [d for d in m.group(1).split(",") if d.split("/")[0] in KEEP]
-    text = text.replace(m.group(0), "Directories=" + ",".join(dirs))
-    m = re.search(r"^ScaledDirectories=(.*)$", text, re.M)
-    if m:
-        sd = [d for d in m.group(1).split(",") if d.split("/")[0] in KEEP]
-        text = text.replace(m.group(0), "ScaledDirectories=" + ",".join(sd))
-    open(idx, "w").write(text)
-    print(theme, "icon dirs kept:", len(dirs))
-PY
-gtk-update-icon-cache -f -t /usr/share/icons/Papirus || true
-gtk-update-icon-cache -f -t /usr/share/icons/Papirus-Dark || true
 rm -f /var/cache/apt/*.bin
 # Fonts: keep the everyday weights only.
 find /usr/share/fonts/opentype/inter -name 'InterDisplay-*' -delete
