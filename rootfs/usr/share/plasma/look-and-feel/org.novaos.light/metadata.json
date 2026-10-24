@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "NovaOS"
+            }
+        ],
+        "Category": "",
+        "Description": "Light colours, centred taskbar (Windows 11 style)",
+        "Id": "org.novaos.light",
+        "License": "GPL-2.0+",
+        "Name": "NovaOS Light",
+        "Version": "2.0"
+    },
+    "X-Plasma-APIVersion": "2"
+}

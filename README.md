@@ -74,6 +74,14 @@ Retina Mode doubles the pixels, so only use it with graphics acceleration on.
 
 ### Customising
 
+**NovaOS Style** (opens on the first login, and in the Start menu) changes the
+whole look in one click: four layouts — *NovaOS* (centred taskbar, Windows 11
+style), *NovaOS Light*, *NovaOS Mac* (top menu bar + dock) and *NovaOS
+Classic* (Windows 10 style) — plus dark/light, 11 accent colours, wallpapers,
+taskbar position and size, window buttons left/right, animation speed and
+icon style. Kvantum is included for extra app styles, and Settings →
+Appearance can download thousands of themes, icons and widgets.
+
 * **Wallpaper:** right-click the desktop → *Configure Desktop and Wallpaper*.
   30+ professional KDE wallpapers are included, plus *Picture of the Day*
   (Bing, NASA, Unsplash…) for a new one every day.

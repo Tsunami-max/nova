@@ -8,6 +8,12 @@ if grep -q "boot=casper" /proc/cmdline && [ -x /usr/bin/calamares ]; then
 	chmod +x "$DESK/novaos-install.desktop"
 fi
 sleep 8
+# First login: open NovaOS Style so the user can pick a look right away.
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}"
+if [ ! -e "$CFG/.novaos-style-shown" ] && ! grep -q novaos.selftest /proc/cmdline; then
+	touch "$CFG/.novaos-style-shown"
+	(nova-style >/dev/null 2>&1 &)
+fi
 if [ "$(/usr/lib/novaos/gl-check.sh)" != yes ] && systemd-detect-virt -q --vm; then
 	STAMP="${XDG_RUNTIME_DIR:-/tmp}/novaos-gpu-hint"
 	[ -e "$STAMP" ] && exit 0

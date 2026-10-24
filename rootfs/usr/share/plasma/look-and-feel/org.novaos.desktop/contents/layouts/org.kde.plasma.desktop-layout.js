@@ -34,6 +34,7 @@ kickoff.writeConfig("favorites", [
     "org.kde.kcalc.desktop",
     "org.kde.kpat.desktop",
     "org.kde.konsole.desktop",
+    "novaos-style.desktop",
     "systemsettings.desktop"
 ]);
 

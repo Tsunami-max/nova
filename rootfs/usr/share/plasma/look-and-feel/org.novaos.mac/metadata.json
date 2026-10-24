@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "NovaOS"
+            }
+        ],
+        "Category": "",
+        "Description": "Top menu bar and a centred dock at the bottom (macOS style)",
+        "Id": "org.novaos.mac",
+        "License": "GPL-2.0+",
+        "Name": "NovaOS Mac",
+        "Version": "2.0"
+    },
+    "X-Plasma-APIVersion": "2"
+}

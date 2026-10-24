@@ -120,6 +120,7 @@ PKGS_COMMON=(
 	xdg-user-dirs xdg-utils desktop-file-utils shared-mime-info
 	# --- App Store: Discover with Ubuntu packages and Flathub ---
 	plasma-discover plasma-discover-backend-flatpak packagekit flatpak
+	qt5-style-kvantum qt5-style-kvantum-themes dmz-cursor-theme
 	# --- built-in applications ---
 	dolphin konsole kwrite kcalc gwenview okular ark kde-spectacle kolourpaint vlc
 	libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-kf5

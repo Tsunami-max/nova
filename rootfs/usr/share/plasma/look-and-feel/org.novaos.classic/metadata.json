@@ -1,0 +1,17 @@
+{
+    "KPackageStructure": "Plasma/LookAndFeel",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "NovaOS"
+            }
+        ],
+        "Category": "",
+        "Description": "Full-width taskbar with app names, Start on the left (Windows 10 style)",
+        "Id": "org.novaos.classic",
+        "License": "GPL-2.0+",
+        "Name": "NovaOS Classic",
+        "Version": "2.0"
+    },
+    "X-Plasma-APIVersion": "2"
+}

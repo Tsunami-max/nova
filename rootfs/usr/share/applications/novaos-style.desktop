@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS Style
+GenericName=Personalize
+Comment=Layout, colours, accent, wallpaper, taskbar and window style
+Exec=nova-style
+Icon=novaos-wallpapers
+Categories=Settings;DesktopSettings;Qt;KDE;
+Keywords=theme;layout;dock;taskbar;wallpaper;accent;dark;light;mac;windows;customize;personalize;
+StartupWMClass=novaos-style

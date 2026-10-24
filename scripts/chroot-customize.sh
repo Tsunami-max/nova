@@ -196,7 +196,7 @@ done
 # Taskbar pin + default browser point at the real browser entry.
 sed -i "s#PLACEHOLDER_BROWSER#${BROWSER_DESKTOP:-org.gnome.Epiphany.desktop}#g" \
 	/etc/xdg/kdeglobals \
-	/usr/share/plasma/look-and-feel/org.novaos.desktop/contents/layouts/org.kde.plasma.desktop-layout.js
+	/usr/share/plasma/look-and-feel/org.novaos.*/contents/layouts/org.kde.plasma.desktop-layout.js
 
 # --- App Store: Flathub ------------------------------------------------------------------
 if command -v flatpak >/dev/null 2>&1; then
@@ -270,7 +270,7 @@ rm -rf /usr/share/man/* /usr/share/help/*
 find /usr/share/locale -mindepth 1 -maxdepth 1 -type d \
 	! -name 'en*' ! -name fr ! -name de ! -name es ! -name it ! -name nl ! -name 'pt*' ! -name ro \
 	-exec rm -rf {} +
-rm -rf /usr/share/icons/Papirus-Light /usr/share/icons/ePapirus /usr/share/icons/ePapirus-Dark \
+rm -rf /usr/share/icons/ePapirus /usr/share/icons/ePapirus-Dark \
 	/usr/share/icons/Humanity /usr/share/icons/Humanity-Dark \
 	/usr/share/icons/ubuntu-mono-dark /usr/share/icons/ubuntu-mono-light
 rm -f /var/cache/apt/*.bin
