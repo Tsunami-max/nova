@@ -15,7 +15,8 @@ if [ "$GPU" = yes ]; then
 	$KW --file kwinrc --group Compositing --key Enabled true
 	$KW --file kwinrc --group Compositing --key Backend OpenGL
 	$KW --file kwinrc --group Compositing --key GLCore true
-else
+elif [ "$(kreadconfig5 --file kwinrc --group NovaOS --key Transparency --default off)" = off ]; then
+	# (kept on when the user turned on transparent windows in NovaOS Style)
 	$KW --file kwinrc --group Compositing --key Enabled false
 fi
 

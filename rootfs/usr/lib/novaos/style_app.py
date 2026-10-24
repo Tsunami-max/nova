@@ -248,6 +248,9 @@ class StyleWindow(Gtk.ApplicationWindow):
         box.pack_start(card(row("Taskbar position", pos), row("Taskbar size", size),
                             row("Window buttons", btns), row("Animations", anim),
                             row("Icons", icons),
+                            row("Transparent windows", self.make_transparency(),
+                                "See-through windows and menus with blur. Needs graphics "
+                                "acceleration (UTM: GPU Supported display)."),
                             row("Add widgets, move or resize the taskbar", edit,
                                 "Drag things around; click Exit Edit Mode when done.")), False, False, 0)
 
@@ -343,6 +346,48 @@ class StyleWindow(Gtk.ApplicationWindow):
             kwrite("kdeglobals", "KDE", "AnimationDurationFactor", v)
             kwin_reconfigure()
         self.work("Changing animation speed…", f)
+
+    TRANSPARENCY = {  # level: (inactive windows, menus, dialogs, moving/resizing)
+        "off": None,
+        "light": (88, 92, 96, 85),
+        "medium": (78, 86, 92, 75),
+        "strong": (65, 78, 85, 60),
+    }
+
+    def make_transparency(self):
+        combo = Gtk.ComboBoxText()
+        for k, t in (("off", "Off"), ("light", "Light"), ("medium", "Medium"), ("strong", "Strong")):
+            combo.append(k, t)
+        combo.set_active_id(kread("kwinrc", "NovaOS", "Transparency", "off"))
+        combo.connect("changed", self.on_transparency)
+        return combo
+
+    def on_transparency(self, combo):
+        level = combo.get_active_id()
+        vals = self.TRANSPARENCY.get(level)
+
+        def f():
+            kwrite("kwinrc", "NovaOS", "Transparency", level)
+            if vals:
+                g = "Effect-translucency"
+                for key, v in zip(("Inactive", "Menus", "Dialogs", "MoveResize"), vals):
+                    kwrite("kwinrc", g, key, v)
+                kwrite("kwinrc", g, "DropdownMenus", vals[1])
+                kwrite("kwinrc", g, "PopupMenus", vals[1])
+                kwrite("kwinrc", g, "ComboboxPopups", vals[1])
+                kwrite("kwinrc", "Plugins", "translucencyEnabled", "true")
+                kwrite("kwinrc", "Plugins", "blurEnabled", "true")
+                kwrite("kwinrc", "Compositing", "Enabled", "true")
+                run("qdbus", "org.kde.KWin", "/Compositor", "org.kde.kwin.Compositing.resume")
+                kwin_reconfigure()
+                for name in ("translucency", "kwin4_effect_translucency"):
+                    run("qdbus", "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", name)
+            else:
+                kwrite("kwinrc", "Plugins", "translucencyEnabled", "false")
+                for name in ("translucency", "kwin4_effect_translucency"):
+                    run("qdbus", "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.unloadEffect", name)
+                kwin_reconfigure()
+        self.work("Changing transparency…", f)
 
     def on_icons(self, combo):
         v = combo.get_active_id()
