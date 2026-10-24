@@ -1,7 +1,12 @@
 #!/bin/sh
 # Launch the NovaOS installer (Calamares) with administrator rights.
+# The installer draws in software mode: with UTM's GPU acceleration, Qt Quick
+# windows started as root can otherwise stay black.
+SW="QT_QUICK_BACKEND=software QT_XCB_GL_INTEGRATION=none LIBGL_ALWAYS_SOFTWARE=1 QT_QPA_PLATFORMTHEME=kde"
 if [ "$(id -u)" -ne 0 ]; then
-	exec pkexec env DISPLAY="$DISPLAY" XAUTHORITY="$XAUTHORITY" \
-		XDG_RUNTIME_DIR="/run/user/0" QT_QPA_PLATFORMTHEME=gtk3 /usr/bin/calamares "$@"
+	exec pkexec env DISPLAY="$DISPLAY" XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}" \
+		XDG_RUNTIME_DIR=/tmp/calamares-runtime $SW /usr/bin/novaos-install "$@"
 fi
+mkdir -p "${XDG_RUNTIME_DIR:-/tmp/calamares-runtime}" && chmod 700 "${XDG_RUNTIME_DIR:-/tmp/calamares-runtime}"
+export QT_QUICK_BACKEND=software QT_XCB_GL_INTEGRATION=none LIBGL_ALWAYS_SOFTWARE=1
 exec /usr/bin/calamares "$@"
