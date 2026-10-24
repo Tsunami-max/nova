@@ -232,6 +232,9 @@ if command -v flatpak >/dev/null 2>&1; then
 	fi
 fi
 
+# Firefox clicks in VMs: classic X input for every session (see profile.d too).
+grep -q '^MOZ_USE_XINPUT2=' /etc/environment 2>/dev/null || echo 'MOZ_USE_XINPUT2=0' >> /etc/environment
+
 # --- login screen: people in "nopasswdlogin" log in without a password ---------
 getent group nopasswdlogin >/dev/null || groupadd -r nopasswdlogin
 if [ -f /etc/pam.d/sddm ]; then
