@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS desktop guard
+Comment=Restarts the desktop and taskbar if they crash
+Exec=/usr/lib/novaos/shell-guard.sh
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-phase=2

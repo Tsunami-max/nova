@@ -88,6 +88,7 @@ for entry in "${APPS[@]}"; do
 	sleep 2
 done
 say "segfaults: $(sudo -n dmesg | grep -i segfault | tail -3 | tr '\n' ' ')"
+sleep 40
 say "desktop-alive: plasmashell=$(pgrep -x plasmashell >/dev/null && echo yes || echo no) kwin=$(pgrep -x kwin_x11 >/dev/null && echo yes || echo no)"
 say "RESULT pass=$pass fail=$fail"
 case "$ACTION" in
