@@ -234,8 +234,11 @@ fi
 
 # --- login screen: people in "nopasswdlogin" log in without a password ---------
 getent group nopasswdlogin >/dev/null || groupadd -r nopasswdlogin
-if [ -f /etc/pam.d/sddm ] && ! grep -q nopasswdlogin /etc/pam.d/sddm; then
-	sed -i '0,/^auth/s//auth    sufficient      pam_succeed_if.so user ingroup nopasswdlogin\n&/' /etc/pam.d/sddm
+if [ -f /etc/pam.d/sddm ]; then
+	# Ubuntu ships this rule commented out: switch it on (or add it).
+	sed -i 's/^#[[:space:]]*\(auth[[:space:]]\+sufficient[[:space:]]\+pam_succeed_if.so user ingroup nopasswdlogin\)/\1/' /etc/pam.d/sddm
+	grep -q '^auth.*ingroup nopasswdlogin' /etc/pam.d/sddm || \
+		sed -i '0,/^@include common-auth/s//auth    sufficient      pam_succeed_if.so user ingroup nopasswdlogin\n&/' /etc/pam.d/sddm
 fi
 
 # --- services -------------------------------------------------------------------------------
