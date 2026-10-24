@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS extra resolutions
+Exec=/usr/lib/novaos/extra-modes.sh
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-phase=1
