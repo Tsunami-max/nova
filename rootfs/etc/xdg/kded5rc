@@ -1,0 +1,5 @@
+# NovaOS: the screen size follows the UTM window (novaos-autoresize), so the
+# KScreen daemon must not restore an old saved resolution on every resize.
+# Settings > Display and Monitor still works for manual changes.
+[Module-kscreen]
+autoload=false

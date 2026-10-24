@@ -104,10 +104,10 @@ rename_app() {  # rename_app <desktop file> <new name>
 }
 # Main browser: Chromium when installed, otherwise GNOME Web.
 BROWSER_DESKTOP=""
-for b in chromium.desktop chromium-browser.desktop org.gnome.Epiphany.desktop; do
+for b in firefox.desktop chromium.desktop chromium-browser.desktop org.gnome.Epiphany.desktop; do
 	if [ -f "/usr/share/applications/$b" ]; then BROWSER_DESKTOP="$b"; break; fi
 done
-if [ -n "$BROWSER_DESKTOP" ]; then
+if [ -n "$BROWSER_DESKTOP" ] && [ "$BROWSER_DESKTOP" != firefox.desktop ]; then
 	rename_app "$BROWSER_DESKTOP" "Web Browser"
 	# Start it through nova-browser (GPU-aware flags, works after reinstalls).
 	sed -i -E 's#^Exec=[^ ]*(chromium|chromium-browser|epiphany)( |$)#Exec=nova-browser\2#' \
@@ -154,6 +154,29 @@ EOM
 fi
 # Chromium settings: NovaOS welcome page, no default-browser nag. (GPU or
 # software rendering is chosen per machine by /usr/bin/nova-browser.)
+# Firefox: NovaOS start page, KDE file dialogs, no first-run/default-browser
+# nagging, smooth scrolling; updates come with system updates.
+mkdir -p /etc/firefox/policies
+cat > /etc/firefox/policies/policies.json <<'EOP'
+{
+  "policies": {
+    "DisableAppUpdate": true,
+    "DontCheckDefaultBrowser": true,
+    "DisableTelemetry": true,
+    "OverrideFirstRunPage": "",
+    "OverridePostUpdatePage": "",
+    "Homepage": {
+      "URL": "file:///usr/share/novaos/welcome/index.html",
+      "StartPage": "homepage"
+    },
+    "Preferences": {
+      "widget.use-xdg-desktop-portal.file-picker": { "Value": 1, "Status": "default" },
+      "general.smoothScroll": { "Value": true, "Status": "default" },
+      "browser.tabs.inTitlebar": { "Value": 1, "Status": "default" }
+    }
+  }
+}
+EOP
 for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
 	mkdir -p "$d"
 	cat > "$d/novaos.json" <<'EOP'
@@ -192,6 +215,7 @@ systemctl enable sddm.service || true
 systemctl set-default graphical.target
 systemctl enable NetworkManager.service || true
 systemctl enable systemd-resolved.service || true
+systemctl enable spice-vdagentd.socket 2>/dev/null || systemctl enable spice-vdagentd.service 2>/dev/null || true
 for u in apt-daily.timer apt-daily-upgrade.timer motd-news.timer e2scrub_all.timer \
 	man-db.timer fstrim.timer; do
 	systemctl disable "$u" 2>/dev/null || true

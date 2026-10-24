@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS screen size follows window
+Exec=/usr/lib/novaos/autoresize.sh
+OnlyShowIn=KDE;
+NoDisplay=true
+X-KDE-autostart-phase=1

@@ -3,7 +3,7 @@
 # settings that suit this machine (GPU when available, smooth software
 # rendering otherwise). If no browser is installed, opens Settings > Apps.
 BIN=""
-for b in chromium chromium-browser epiphany-browser epiphany firefox; do
+for b in firefox chromium chromium-browser epiphany-browser epiphany; do
 	if command -v "$b" >/dev/null 2>&1; then BIN="$b"; break; fi
 done
 if [ -z "$BIN" ]; then

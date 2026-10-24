@@ -139,6 +139,26 @@ PKGS_amd64=(xserver-xorg-video-vesa xserver-xorg-video-qxl
 	grub-efi-amd64-bin grub-pc-bin)
 PKGS_arm64=(grub-efi-arm64-bin)
 
+install_firefox() {
+	log "Installing Firefox (Mozilla's official APT repository)"
+	mkdir -p "$CHROOT/etc/apt/keyrings"
+	curl -fsSL https://packages.mozilla.org/apt/repo-signing-key.gpg \
+		-o "$CHROOT/etc/apt/keyrings/packages.mozilla.org.asc" || return 1
+	echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" \
+		> "$CHROOT/etc/apt/sources.list.d/mozilla.list"
+	# Mozilla's real Firefox, not Ubuntu's snap transition package.
+	cat > "$CHROOT/etc/apt/preferences.d/mozilla" <<'PIN'
+Package: *
+Pin: origin packages.mozilla.org
+Pin-Priority: 1000
+PIN
+	in_chroot apt-get update || return 1
+	in_chroot apt-get -y install firefox || return 1
+	[ -x "$CHROOT/usr/lib/firefox/firefox" ] || [ -x "$CHROOT/usr/lib/firefox/firefox-bin" ] || return 1
+	in_chroot apt-get -y purge epiphany-browser epiphany-browser-data || true
+	return 0
+}
+
 install_chromium() {
 	log "Installing Chromium (xtradeb PPA)"
 	in_chroot apt-get -y install software-properties-common gpg-agent dirmngr || return 1
@@ -198,6 +218,9 @@ EOF
 	# Optional: Chromium as the main browser (needs a machine with full internet,
 	# e.g. the GitHub Actions build). Ubuntu only ships Chromium as a snap, so the
 	# deb comes from the xtradeb PPA. Skipped silently if unreachable.
+	if [ "${NOVA_FIREFOX:-0}" = 1 ]; then
+		install_firefox || { echo "WARNING: Firefox not installed, trying Chromium"; NOVA_CHROMIUM=1; }
+	fi
 	if [ "${NOVA_CHROMIUM:-0}" = 1 ]; then
 		install_chromium || echo "WARNING: Chromium not installed, keeping GNOME Web"
 	fi
@@ -218,7 +241,7 @@ stage_customize() {
 	local arch_pkgs="PKGS_${ARCH}[@]"
 	[ -n "$(ls -A "$CHROOT/var/lib/apt/lists" 2>/dev/null | grep -v lock)" ] || in_chroot apt-get update
 	local pkgs=("${PKGS_COMMON[@]}" "${!arch_pkgs}")
-	if [ -x "$CHROOT/usr/bin/chromium" ]; then
+	if [ -x "$CHROOT/usr/bin/chromium" ] || [ -e "$CHROOT/usr/lib/firefox/firefox" ]; then
 		local filtered=()
 		for p in "${pkgs[@]}"; do [ "$p" = epiphany-browser ] || filtered+=("$p"); done
 		pkgs=("${filtered[@]}")

@@ -2,7 +2,7 @@
 
 NovaOS is a desktop operating system for Apple-silicon Macs (running in
 **UTM**) built on **Ubuntu 24.04 LTS** and **KDE Plasma 5.27**, styled with its
-own look: NovaOS logo and Start button, a Windows 11-style centred taskbar,
+own look: NovaOS logo, boot and login splash, Start button, a Windows 11-style centred taskbar,
 NovaOS Dark colours with a violet accent, boot splash and installer.
 
 You do **not** install anything on your Mac except UTM. macOS is not changed.
@@ -42,13 +42,18 @@ To turn it on for an existing VM: shut NovaOS down → select the VM → **Edit*
 Without acceleration NovaOS turns window effects off automatically so it
 stays usable, but large screens and video will be slower.
 
-### Full screen, 2K / 4K
+### Full screen that fills the whole screen (2K / 4K)
 
-Use UTM's full-screen button. With *Retina mode* on (VM settings → Display),
-NovaOS gets the Mac's full resolution and on the first login picks a matching
-scale (150 % from 2400 px wide, 200 % from 3000 px). Change it any time in
-**Settings → Display and Monitor**. 8K is beyond what a virtual machine can
-draw smoothly.
+NovaOS resizes itself to the UTM window, so full screen covers the whole
+screen with no black borders. In UTM: shut NovaOS down → **Edit** →
+**Display** → tick **Resize display to window size automatically** (and
+**Retina Mode** if you want the sharpest picture) → **Save**. Then use UTM's
+full-screen button.
+
+At every login NovaOS picks a matching size for text and buttons: 100 % up
+to 2400 pixels wide, 125 % up to 3000, 200 % above (Retina / 4K). Choose your
+own in **Settings → Display and Monitor → Scale**; NovaOS then keeps yours.
+Retina Mode doubles the pixels, so only use it with graphics acceleration on.
 
 ---
 
@@ -56,7 +61,7 @@ draw smoothly.
 
 | You want | NovaOS app |
 |---|---|
-| Browse the web | **Web Browser** — Chromium (open-source base of Google Chrome) with video codecs |
+| Browse the web | **Firefox** (Mozilla's official build), with video codecs. Chromium and others are in the App Store |
 | Install apps & games | **App Store** — KDE Discover with Ubuntu apps **and Flathub** (thousands of apps and games) |
 | Word / PowerPoint / Excel | **Writer**, **Impress**, **Calc** (LibreOffice; open and save .docx, .pptx, .xlsx) |
 | Paint | **Paint** (KolourPaint) |
