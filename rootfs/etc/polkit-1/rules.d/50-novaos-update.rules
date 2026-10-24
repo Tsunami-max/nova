@@ -1,0 +1,9 @@
+// NovaOS: administrators can run NovaOS Update and the autologin switch
+// without typing their password.
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.policykit.exec" && subject.isInGroup("sudo")) {
+        var p = action.lookup("program");
+        if (p == "/usr/lib/novaos/update.sh" || p == "/usr/lib/novaos/autologin.sh")
+            return polkit.Result.YES;
+    }
+});

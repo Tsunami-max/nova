@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS Update
+GenericName=Update to the newest NovaOS
+Comment=Get the newest NovaOS version without reinstalling. Your files, apps and logins stay.
+Exec=nova-update
+Icon=system-software-update
+Categories=System;Settings;
+Keywords=update;upgrade;version;novaos;

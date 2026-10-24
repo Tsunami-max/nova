@@ -4,11 +4,23 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 NOVA_VERSION="${NOVA_VERSION:-1.0}"
 echo "== NovaOS customisation ($NOVA_VERSION, ${NOVA_ARCH:-?})"
+# NOVA_UPDATE=1: run by NovaOS Update on an installed system, so skip the
+# image-only steps (locale, slimming, kernel driver pruning, initramfs).
+UPDATE="${NOVA_UPDATE:-}"
+mkdir -p /etc/novaos
+cat > /etc/novaos/build <<EOB
+VERSION=$NOVA_VERSION
+COMMIT=${NOVA_COMMIT:-unknown}
+BUILD=${NOVA_BUILD:-local}
+DATE=$(date -u +%Y-%m-%d)
+EOB
 
 # --- locale -------------------------------------------------------------------
-sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen 2>/dev/null || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen en_US.UTF-8
-update-locale LANG=en_US.UTF-8
+if [ -z "$UPDATE" ]; then
+	sed -i 's/^# *en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen 2>/dev/null || echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+	locale-gen en_US.UTF-8
+	update-locale LANG=en_US.UTF-8
+fi
 
 # --- branding -------------------------------------------------------------------
 if ! dpkg-divert --list /usr/lib/os-release | grep -q novaos; then
@@ -29,7 +41,7 @@ EOF
 ln -sf ../usr/lib/os-release /etc/os-release
 echo "NovaOS $NOVA_VERSION \\n \\l" > /etc/issue
 echo "NovaOS $NOVA_VERSION" > /etc/issue.net
-echo "novaos" > /etc/hostname
+if [ -z "$UPDATE" ]; then echo "novaos" > /etc/hostname; fi
 
 # --- look & feel (KDE Plasma) ---------------------------------------------------
 # NovaOS colour schemes: Breeze with NovaOS's deep blue-black surfaces and
@@ -255,6 +267,12 @@ with open("/usr/share/doc/novaos/package-licenses.tsv", "w") as f:
 print("licence table:", len(rows), "packages")
 EOF
 
+
+if [ -n "$UPDATE" ]; then
+	update-grub 2>/dev/null || true
+	echo "== NovaOS update customisation complete"
+	exit 0
+fi
 
 # --- slimming: docs, man pages, rare translations, unused font weights -------
 cat > /etc/dpkg/dpkg.cfg.d/01-novaos-slim <<'EOF2'

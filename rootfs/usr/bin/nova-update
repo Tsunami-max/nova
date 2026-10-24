@@ -1,0 +1,4 @@
+#!/bin/bash
+# NovaOS Update in a terminal window, so you can watch it work.
+if [ -t 1 ]; then exec pkexec /usr/lib/novaos/update.sh "$@"; fi
+exec konsole --hidetabbar -p tabtitle="NovaOS Update" --hold -e pkexec /usr/lib/novaos/update.sh "$@"

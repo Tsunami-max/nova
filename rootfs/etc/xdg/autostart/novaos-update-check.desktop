@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=NovaOS update check
+Exec=/usr/lib/novaos/update-check.sh
+NoDisplay=true
+X-KDE-autostart-phase=2

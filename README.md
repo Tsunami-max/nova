@@ -74,8 +74,13 @@ Retina Mode doubles the pixels, so only use it with graphics acceleration on.
 
 ### Customising
 
-**NovaOS Style** (opens on the first login, and in the Start menu) changes the
-whole look in one click: four layouts — *NovaOS* (centred taskbar, Windows 11
+**NovaOS Style** (opens on the first login, and in the Start menu) has pages
+for *Look*, *Wallpaper* (incl. slideshow), *Taskbar* (position, size, auto-hide,
+floating, see-through, clock format/seconds/date), *Windows & effects* (button
+side and size, borders, title position, open/close and minimise animations,
+wobbly windows, transparency, blur strength, hot corner, night light), *Text &
+pointer* (font, text size, pointer style and size, single/double click, mouse
+speed), *Start-up & updates* and *Backup*. Four layouts — *NovaOS* (centred taskbar, Windows 11
 style), *NovaOS Light*, *NovaOS Mac* (top menu bar + dock) and *NovaOS
 Classic* (Windows 10 style) — plus dark/light, 11 accent colours, wallpapers,
 taskbar position and size, window buttons left/right, animation speed and
@@ -93,6 +98,28 @@ Appearance can download thousands of themes, icons and widgets.
   buttons — all in Settings.
 * **Uninstall:** App Store → *Installed* → *Remove* (works for the browser
   too; reinstall it from the App Store).
+
+### Updating to a new NovaOS (no reinstall, no new login)
+
+Install NovaOS once. After that, new versions come to you: **Start → NovaOS
+Update** (or NovaOS Style → *Start-up & updates* → *Update NovaOS now*).
+It downloads the newest NovaOS and installs it on top of the one you have —
+your files, apps, settings, Firefox bookmarks and website logins all stay.
+NovaOS also tells you after login when a new version is out.
+
+The installed NovaOS logs you in automatically (no password at start-up);
+switch that off in NovaOS Style → *Start-up & updates*.
+
+Already have an older NovaOS installed (without NovaOS Update)? Open
+**Terminal** once and paste:
+
+```
+curl -fsSL https://raw.githubusercontent.com/Tsunami-max/nova/main/rootfs/usr/lib/novaos/update.sh | sudo bash
+```
+
+Moving to a fresh install anyway? NovaOS Style → *Backup* → *Save my setup*
+saves your whole look, settings and (optionally) Firefox logins to one file;
+*Restore a setup* on the new NovaOS puts it all back.
 
 ### Keyboard (Mac keyboard in UTM)
 

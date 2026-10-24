@@ -94,48 +94,8 @@ stage_bootstrap() {
 # ---------------------------------------------------------------------------
 # Stage 2: kernel, desktop and applications
 # ---------------------------------------------------------------------------
-PKGS_COMMON=(
-	# --- live boot + system ---
-	ubuntu-minimal systemd-sysv systemd-timesyncd sudo locales tzdata
-	keyboard-configuration console-setup kbd casper discover laptop-detect
-	initramfs-tools zstd squashfs-tools dosfstools e2fsprogs parted
-	network-manager systemd-resolved iputils-ping curl nano less htop bash-completion pciutils
-	ethtool dbus-x11 dbus-user-session policykit-1 udisks2 acpid
-	spice-vdagent qemu-guest-agent
-	# --- graphics stack ---
-	xserver-xorg-core xserver-xorg-input-libinput xserver-xorg-video-fbdev
-	xinit xauth x11-xserver-utils x11-utils x11-xkb-utils xdotool
-	mesa-utils libgl1-mesa-dri mesa-vulkan-drivers
-	# --- boot splash + login ---
-	plymouth plymouth-label sddm sddm-theme-breeze kde-config-sddm
-	# --- KDE Plasma desktop, styled as NovaOS ---
-	plasma-desktop plasma-workspace kwin-x11 breeze breeze-gtk-theme breeze-cursor-theme
-	kde-config-gtk-style plasma-nm plasma-pa powerdevil kscreen systemsettings
-	kinfocenter plasma-systemmonitor kde-cli-tools libkf5config-bin kmenuedit
-	polkit-kde-agent-1 xdg-desktop-portal-kde kdialog khotkeys
-	plasma-widgets-addons plasma-wallpapers-addons plasma-workspace-wallpapers
-	kio-extras ffmpegthumbs kdegraphics-thumbnailers
-	pipewire pipewire-pulse wireplumber alsa-utils
-	dconf-cli dconf-gsettings-backend gsettings-desktop-schemas
-	xdg-user-dirs xdg-utils desktop-file-utils shared-mime-info
-	# --- App Store: Discover with Ubuntu packages and Flathub ---
-	plasma-discover plasma-discover-backend-flatpak packagekit flatpak
-	qt5-style-kvantum qt5-style-kvantum-themes dmz-cursor-theme
-	# --- built-in applications ---
-	dolphin konsole kwrite kcalc gwenview okular ark kde-spectacle kolourpaint vlc
-	libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-kf5
-	libreoffice-style-breeze fonts-crosextra-carlito fonts-crosextra-caladea
-	kpat kmines kblocks kmahjongg
-	epiphany-browser
-	gstreamer1.0-libav gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
-	python3 python3-gi python3-gi-cairo gir1.2-gtk-3.0 python3-cairo
-	# --- look & feel ---
-	papirus-icon-theme librsvg2-common adwaita-icon-theme
-	fonts-inter fonts-jetbrains-mono fonts-noto-color-emoji
-	fonts-dejavu-core
-	# --- installer ---
-	calamares rsync efibootmgr grub2-common
-)
+# Package list lives in packages.list so NovaOS Update can install new ones.
+mapfile -t PKGS_COMMON < <(sed 's/#.*//' "$HERE/packages.list" | tr ' \t' '\n\n' | grep -v '^$')
 PKGS_amd64=(xserver-xorg-video-vesa xserver-xorg-video-qxl
 	grub-efi-amd64-bin grub-pc-bin)
 PKGS_arm64=(grub-efi-arm64-bin)
@@ -254,7 +214,9 @@ stage_customize() {
 	mkdir -p "$CHROOT/usr/share/doc/novaos"
 	cp "$HERE/licenses/LICENSES.md" "$CHROOT/usr/share/doc/novaos/LICENSES.md"
 	install -m 0755 "$HERE/scripts/chroot-customize.sh" "$CHROOT/tmp/chroot-customize.sh"
-	in_chroot env NOVA_ARCH="$ARCH" NOVA_VERSION="$VERSION" /tmp/chroot-customize.sh
+	local commit="${GITHUB_SHA:-$(git -C "$HERE" rev-parse HEAD 2>/dev/null || echo unknown)}"
+	in_chroot env NOVA_ARCH="$ARCH" NOVA_VERSION="$VERSION" NOVA_COMMIT="$commit" \
+		NOVA_BUILD="${GITHUB_RUN_NUMBER:-local}" /tmp/chroot-customize.sh
 	rm -f "$CHROOT/tmp/chroot-customize.sh"
 	umount_chroot
 }
