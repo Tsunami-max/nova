@@ -177,6 +177,17 @@ cat > /etc/firefox/policies/policies.json <<'EOP'
   }
 }
 EOP
+# Firefox draws pages with WebRender. On UTM's virtual GPU (virgl) the
+# hardware path loses all text, so use WebRender's fast software renderer.
+if [ -d /usr/lib/firefox/defaults/pref ]; then
+	cat > /usr/lib/firefox/defaults/pref/novaos.js <<'EOJ'
+// NovaOS defaults
+pref("gfx.webrender.software", true);
+pref("gfx.webrender.software.opengl", false);
+pref("layers.acceleration.disabled", false);
+pref("widget.use-xdg-desktop-portal.file-picker", 1);
+EOJ
+fi
 for d in /etc/chromium/policies/managed /etc/chromium-browser/policies/managed; do
 	mkdir -p "$d"
 	cat > "$d/novaos.json" <<'EOP'
