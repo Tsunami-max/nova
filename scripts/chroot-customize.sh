@@ -232,6 +232,12 @@ if command -v flatpak >/dev/null 2>&1; then
 	fi
 fi
 
+# --- login screen: people in "nopasswdlogin" log in without a password ---------
+getent group nopasswdlogin >/dev/null || groupadd -r nopasswdlogin
+if [ -f /etc/pam.d/sddm ] && ! grep -q nopasswdlogin /etc/pam.d/sddm; then
+	sed -i '0,/^auth/s//auth    sufficient      pam_succeed_if.so user ingroup nopasswdlogin\n&/' /etc/pam.d/sddm
+fi
+
 # --- services -------------------------------------------------------------------------------
 echo /usr/bin/sddm > /etc/X11/default-display-manager
 systemctl enable sddm.service || true

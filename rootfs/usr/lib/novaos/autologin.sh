@@ -1,5 +1,6 @@
 #!/bin/bash
 # autologin.sh on <user> | off   — start NovaOS straight to the desktop (no password).
+# autologin.sh nopass-on|nopass-off <user> — no password on the login screen either.
 set -e
 CONF=/etc/sddm.conf.d/60-novaos-autologin.conf
 case "${1:-}" in
@@ -21,5 +22,17 @@ off)
 	# The installer may have written autologin into sddm.conf itself.
 	[ -f /etc/sddm.conf ] && sed -i '/^\[Autologin\]/,/^\[/{/^User=/d}' /etc/sddm.conf
 	echo "Autologin off" ;;
-*) echo "usage: $0 on <user> | off"; exit 2 ;;
+nopass-on)
+	# Log in on the login screen (after logging out) without typing a password.
+	u="${2:?user}"
+	getent group nopasswdlogin >/dev/null || groupadd -r nopasswdlogin
+	usermod -aG nopasswdlogin "$u"
+	rm -f /etc/novaos/password-login
+	echo "Password-free login on for $u" ;;
+nopass-off)
+	u="${2:?user}"
+	gpasswd -d "$u" nopasswdlogin >/dev/null 2>&1 || true
+	mkdir -p /etc/novaos; touch /etc/novaos/password-login
+	echo "Password-free login off for $u" ;;
+*) echo "usage: $0 on <user> | off | nopass-on <user> | nopass-off <user>"; exit 2 ;;
 esac

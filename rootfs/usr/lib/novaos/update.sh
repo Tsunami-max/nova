@@ -74,6 +74,7 @@ NOVA_UPDATE=1 NOVA_VERSION="$VERSION" NOVA_COMMIT="${COMMIT:-unknown}" NOVA_BUIL
 # Log in automatically (no password at start-up) unless switched off in NovaOS Style.
 if [ -n "$TARGET_USER" ] && [ ! -e /etc/novaos/no-autologin ] && [ "$TARGET_USER" != root ]; then
 	/usr/lib/novaos/autologin.sh on "$TARGET_USER" || true
+	[ -e /etc/novaos/password-login ] || /usr/lib/novaos/autologin.sh nopass-on "$TARGET_USER" || true
 fi
 
 # Refresh the person's desktop with the new NovaOS defaults (keeps their own changes).

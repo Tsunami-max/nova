@@ -107,8 +107,11 @@ It downloads the newest NovaOS and installs it on top of the one you have —
 your files, apps, settings, Firefox bookmarks and website logins all stay.
 NovaOS also tells you after login when a new version is out.
 
-The installed NovaOS logs you in automatically (no password at start-up);
-switch that off in NovaOS Style → *Start-up & updates*.
+The installed NovaOS logs you in automatically (no password at start-up).
+**Logging out** is one click: the ⏻ / log-out buttons next to the clock (also
+Ctrl+Alt+Del or Start → Leave). Logging back in needs no password either —
+just press Enter on the login screen. All of this can be switched in NovaOS
+Style → *Start-up & updates*.
 
 Already have an older NovaOS installed (without NovaOS Update)? Open
 **Terminal** once and paste:

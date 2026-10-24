@@ -566,6 +566,28 @@ class StyleWindow(Gtk.ApplicationWindow):
                      row("Apps that start with NovaOS", button("Choose…",
                                                                lambda: launch("systemsettings", "kcm_autostart"))))
 
+        try:
+            import grp
+            nopass = user in grp.getgrnam("nopasswdlogin").gr_mem
+        except (KeyError, ImportError):
+            nopass = False
+        npw = Gtk.Switch(active=not nopass)
+        npw.connect("notify::active", self.on_password_login)
+        if LIVE:
+            npw.set_sensitive(False)
+        btn = switch(self.has_leave_buttons(), self.on_leave_buttons)
+        confirm = switch(kread("ksmserverrc", "General", "confirmLogout", "true") != "false",
+                         lambda on: kwrite("ksmserverrc", "General", "confirmLogout", "true" if on else "false"))
+        now = button("Log out now", lambda: launch("qdbus", "org.kde.ksmserver", "/KSMServer", "logout",
+                                                   "0", "0", "0"))
+        self.section(box, "Log out and log in",
+                     row("Log out and power buttons on the taskbar", btn,
+                         "One click to log out or shut down (next to the clock)."),
+                     row("Ask “Are you sure?” before logging out", confirm),
+                     row("Password on the login screen", npw,
+                         "Off: after logging out, just press Enter (or click the arrow) to log back in."),
+                     row("Log out", now, "Also: Ctrl+Alt+Del, or Start → Leave."))
+
     def page_backup(self):
         box = self.page("backup", "Backup",
                         "Save your whole NovaOS setup to one file, and restore it on another NovaOS "
@@ -938,6 +960,54 @@ class StyleWindow(Gtk.ApplicationWindow):
             kwrite("ksplashrc", "KSplash", "Engine", "KSplashQML" if on else "none")
             kwrite("ksplashrc", "KSplash", "Theme", "org.novaos.desktop" if on else "None")
         self.work("Changing start-up…", f)
+
+    def on_password_login(self, sw, _p):
+        ask = sw.get_active()
+        user = os.environ.get("USER") or os.path.basename(HOME)
+
+        def f():
+            r = run("pkexec", "/usr/lib/novaos/autologin.sh", "nopass-off" if ask else "nopass-on", user)
+            if r is None or r.returncode != 0:
+                GLib.idle_add(sw.set_active, not ask)
+                return "Could not change it (no permission)."
+            return "The login screen asks for your password." if ask else \
+                "No password needed on the login screen."
+        self.work("Changing log in…", f)
+
+    LEAVE_JS = ("var w = main.addWidget('org.kde.plasma.lock_logout'); w.currentConfigGroup = ['General'];"
+                "var on = ['show_requestLogout', 'show_requestShutDown'];"
+                "var off = ['show_lockScreen', 'show_switchUser', 'show_suspendToDisk', 'show_suspendToRam',"
+                " 'show_requestReboot'];"
+                "for (var i = 0; i < on.length; i++) w.writeConfig(on[i], true);"
+                "for (var i = 0; i < off.length; i++) w.writeConfig(off[i], false);")
+
+    LEAVE_ORDER_JS = ("var ps = panels(); for (var i = 0; i < ps.length; i++) { var p = ps[i]; var l = p.widgets('org.kde.plasma.lock_logout'); var c = p.widgets('org.kde.plasma.digitalclock'); if (!l.length || !c.length) continue; p.currentConfigGroup = ['General']; var o = String(p.readConfig('AppletOrder', '')).split(';'); var lid = String(l[0].id), cid = String(c[0].id); o = o.filter(function (x) { return x != lid && x != ''; }); o.splice(o.indexOf(cid) + 1, 0, lid); p.writeConfig('AppletOrder', o.join(';')); }")
+
+    def has_leave_buttons(self):
+        out = shell_script("var ps = panels(); var n = 0; for (var i = 0; i < ps.length; i++) {"
+                           " var w = ps[i].widgets('org.kde.plasma.lock_logout'); n += w.length; } print(n);")
+        return out.strip() not in ("", "0")
+
+    def on_leave_buttons(self, on):
+        if on == self.has_leave_buttons():
+            return
+        if on:
+            # Put the buttons next to the clock (Plasma applies the order when it restarts).
+            js = self.main_panel_js(self.LEAVE_JS).replace("if (t == 'org.kde.plasma.icontasks' || "
+                                                           "t == 'org.kde.plasma.taskmanager')",
+                                                           "if (t == 'org.kde.plasma.digitalclock')")
+
+            def f():
+                shell_script(js)
+                shell_script(self.LEAVE_ORDER_JS)
+                restart_plasmashell()
+            self.work("Changing the taskbar…", f)
+            return
+        else:
+            js = ("var ps = panels(); for (var i = 0; i < ps.length; i++) {"
+                  " var w = ps[i].widgets('org.kde.plasma.lock_logout');"
+                  " for (var k = 0; k < w.length; k++) w[k].remove(); }")
+        self.work("Changing the taskbar…", lambda: shell_script(js))
 
     # -- backup ----------------------------------------------------------------
     def on_backup(self):

@@ -57,4 +57,14 @@ var clock = panel.addWidget("org.kde.plasma.digitalclock");
 clock.currentConfigGroup = ["Appearance"];
 clock.writeConfig("showDate", "true");
 clock.writeConfig("dateFormat", "shortDate");
+// NovaOS: one-click Log out and Power buttons.
+var leave = panel.addWidget("org.kde.plasma.lock_logout");
+leave.currentConfigGroup = ["General"];
+leave.writeConfig("show_lockScreen", "false");
+leave.writeConfig("show_switchUser", "false");
+leave.writeConfig("show_suspendToDisk", "false");
+leave.writeConfig("show_suspendToRam", "false");
+leave.writeConfig("show_requestReboot", "false");
+leave.writeConfig("show_requestLogout", "true");
+leave.writeConfig("show_requestShutDown", "true");
 panel.addWidget("org.kde.plasma.showdesktop");
