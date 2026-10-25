@@ -147,9 +147,11 @@ def parse_appstream(path, base):
                             a.icon, best = p, h
                             break
             a.categories = {c.text for c in el.iter("category") if c.text}
+            lang = "{http://www.w3.org/XML/1998/namespace}lang"
             dev = el.find("developer")
-            a.developer = text_of(dev.find("name")) if dev is not None and dev.find("name") is not None \
-                else (el.findtext("developer_name") or "")
+            names = [n for n in (dev.findall("name") if dev is not None else el.findall("developer_name"))
+                     if not n.get(lang)]
+            a.developer = text_of(names[0]) if names else ""
             for u in el.findall("url"):
                 if u.get("type") == "homepage":
                     a.homepage = (u.text or "").strip()
