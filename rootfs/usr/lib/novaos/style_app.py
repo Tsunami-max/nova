@@ -412,6 +412,30 @@ class StyleWindow(Gtk.ApplicationWindow):
         self.section(box, "Slideshow", row("Change wallpaper automatically", slide,
                                            "Cycles through all NovaOS wallpapers and your Pictures folder."))
 
+        cur = shell_script("var d = desktops()[0]; d.currentConfigGroup = ['Wallpaper', 'org.novaos.live', 'General'];"
+                           " print(d.wallpaperPlugin + ' ' + d.readConfig('Mode', 'aurora') + ' '"
+                           " + d.readConfig('Effect', 'none') + ' ' + d.readConfig('Palette', 'nova'));").split()
+        live_on = len(cur) == 4 and cur[0] == "org.novaos.live"
+        self.live_mode = combo([("off", "Off (still picture)"), ("aurora", "Aurora (northern lights)"),
+                                ("nebula", "Nebula (space, shooting stars)"), ("waves", "Waves"),
+                                ("lava", "Lava lamp"), ("flow", "Colour flow"),
+                                ("picture", "My picture + effect")],
+                               cur[1] if live_on else "off", self.on_live)
+        self.live_effect = combo([("none", "None"), ("snow", "Snow"), ("rain", "Rain"), ("fireflies", "Fireflies"),
+                                  ("stars", "Twinkling stars"), ("rays", "Light rays")],
+                                 cur[2] if live_on else "none", self.on_live)
+        self.live_palette = combo([("nova", "NovaOS"), ("aurora", "Aurora"), ("ocean", "Ocean"),
+                                   ("sunset", "Sunset"), ("forest", "Forest"), ("mono", "Silver")],
+                                  cur[3] if live_on else "nova", self.on_live)
+        more = button("Open wallpaper settings…", lambda: self.live_settings())
+        self.section(box, "Live wallpaper",
+                     row("Animated wallpaper", self.live_mode,
+                         "Moving wallpapers that stay light on the processor (max. 15 % by default) "
+                         "and pause while a window fills the screen."),
+                     row("Effect on top", self.live_effect, "Also works on your own picture."),
+                     row("Colours", self.live_palette),
+                     row("Picture, speed, smoothness, processor limit", more))
+
     def page_taskbar(self):
         box = self.page("taskbar", "Taskbar", "Where the taskbar sits, how it looks and its clock.")
         pos = combo([("bottom", "Bottom"), ("top", "Top"), ("left", "Left"), ("right", "Right")],
@@ -676,6 +700,33 @@ class StyleWindow(Gtk.ApplicationWindow):
         if dlg.run() == Gtk.ResponseType.ACCEPT:
             self.on_wallpaper(None, dlg.get_filename())
         dlg.destroy()
+
+    def on_live(self, _combo):
+        mode = self.live_mode.get_active_id()
+        effect = self.live_effect.get_active_id()
+        pal = self.live_palette.get_active_id()
+        if mode == "off" and effect != "none":
+            mode = "picture"
+        if mode == "off":
+            js = ("var ds = desktops(); for (var i = 0; i < ds.length; i++) {"
+                  " if (ds[i].wallpaperPlugin == 'org.novaos.live') ds[i].wallpaperPlugin = 'org.kde.image'; }")
+        else:
+            js = ("var ds = desktops(); for (var i = 0; i < ds.length; i++) { var d = ds[i];"
+                  " d.wallpaperPlugin = 'org.novaos.live';"
+                  " d.currentConfigGroup = ['Wallpaper', 'org.novaos.live', 'General'];"
+                  " d.writeConfig('Mode', '%s'); d.writeConfig('Effect', '%s'); d.writeConfig('Palette', '%s'); }"
+                  % (mode, effect, pal))
+        self.work("Changing wallpaper…", lambda: shell_script(js))
+
+    def live_settings(self):
+        # Plasma's "Configure Desktop and Wallpaper" shortcut (Alt+D, Alt+S).
+        self.status.set_text("Opening wallpaper settings…")
+
+        def f():
+            time.sleep(0.3)
+            run("xdotool", "key", "alt+d", "alt+s")
+            return "Or right-click the desktop → Configure Desktop and Wallpaper."
+        self.work("Opening wallpaper settings…", f)
 
     def on_slideshow(self, combo):
         v = combo.get_active_id()

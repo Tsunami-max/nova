@@ -9,3 +9,6 @@ fi
 # Firefox: in UTM/QEMU the virtual tablet pointer sends events that Firefox's
 # XInput2 code sometimes drops, so clicks do nothing. Use the classic input path.
 export MOZ_USE_XINPUT2=0
+
+# NovaOS Live wallpaper reads its own processor use from /proc to stay under its limit.
+export QML_XHR_ALLOW_FILE_READ=1

@@ -77,6 +77,8 @@ background=${SHELLWP:-/usr/share/novaos/login-background.jpg}
 type=image
 EOT
 fi
+# Default picture for the NovaOS Live wallpaper ("My picture + effect").
+[ -n "$SHELLWP" ] && ln -sf "$SHELLWP" /usr/share/novaos/live-default.jpg
 # Look-and-feel preview picture.
 [ -n "$SHELLWP" ] && command -v convert >/dev/null && \
 	convert "$SHELLWP" -resize 600x338^ -gravity center -extent 600x338 \
@@ -248,6 +250,7 @@ fi
 
 # Firefox clicks in VMs: classic X input for every session (see profile.d too).
 grep -q '^MOZ_USE_XINPUT2=' /etc/environment 2>/dev/null || echo 'MOZ_USE_XINPUT2=0' >> /etc/environment
+grep -q '^QML_XHR_ALLOW_FILE_READ=' /etc/environment 2>/dev/null || echo 'QML_XHR_ALLOW_FILE_READ=1' >> /etc/environment
 
 # --- login screen: people in "nopasswdlogin" log in without a password ---------
 getent group nopasswdlogin >/dev/null || groupadd -r nopasswdlogin

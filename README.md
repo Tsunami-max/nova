@@ -87,6 +87,12 @@ taskbar position and size, window buttons left/right, animation speed and
 icon style. Kvantum is included for extra app styles, and Settings →
 Appearance can download thousands of themes, icons and widgets.
 
+* **Live wallpaper:** NovaOS Style → *Wallpaper* → *Live wallpaper*: Aurora,
+  Nebula (with shooting stars), Waves, Lava lamp, Colour flow, or your own
+  picture with an effect on top — snow, rain, fireflies, twinkling stars or
+  light rays (plus an optional slow zoom). It never uses more than 15 % of
+  the processor (adjustable 10–20 %): when drawing costs more, it shows fewer
+  frames, and it pauses while a window fills the screen.
 * **Wallpaper:** right-click the desktop → *Configure Desktop and Wallpaper*.
   30+ professional KDE wallpapers are included, plus *Picture of the Day*
   (Bing, NASA, Unsplash…) for a new one every day.

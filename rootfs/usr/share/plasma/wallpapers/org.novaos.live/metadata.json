@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Authors": [ { "Name": "NovaOS" } ],
+        "Category": "",
+        "Description": "Animated wallpapers and pictures with live effects (snow, rain, fireflies, stars, light rays). Light on the processor.",
+        "Icon": "preferences-desktop-wallpaper",
+        "Id": "org.novaos.live",
+        "License": "MIT",
+        "Name": "NovaOS Live",
+        "Website": "https://github.com/Tsunami-max/nova"
+    },
+    "Keywords": "animated;live;moving;effects",
+    "X-KDE-ParentApp": "org.kde.plasmashell"
+}
