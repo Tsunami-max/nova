@@ -1,0 +1,7 @@
+// NovaOS App Store: administrators install, update and remove Flathub apps
+// without typing their password.
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("org.freedesktop.Flatpak.") == 0 && subject.isInGroup("sudo") &&
+        subject.local && subject.active)
+        return polkit.Result.YES;
+});

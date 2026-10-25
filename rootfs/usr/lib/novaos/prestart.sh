@@ -42,4 +42,6 @@ if [ -z "$CUR" ] || [ "$CUR" = "$AUTO" ]; then
 		$KW --file kcmfonts --group General --key forceFontDPI "$DPI"
 	fi
 fi
+# Start button: always the NovaOS logo (switch in NovaOS Style → Look).
+python3 /usr/lib/novaos/start-icon.py 2>/dev/null || true
 exit 0

@@ -376,7 +376,10 @@ class StyleWindow(Gtk.ApplicationWindow):
         self.section(box, "Colours", row("Mode", mode), label("Accent colour"), sw,
                      row("Custom accent colour", pick),
                      row("Accent from wallpaper", wall_acc, "Picks the accent colour from your wallpaper."),
-                     row("Icons", icons), row("Taskbar and menus style", ptheme))
+                     row("Icons", icons), row("Taskbar and menus style", ptheme),
+                     row("NovaOS logo on the Start button", switch(
+                         kread("novaosrc", "Start", "NovaIcon", "true") != "false", self.on_start_icon),
+                         "Keeps the NovaOS logo even after you change themes or layouts."))
         more = Gtk.Box(spacing=8)
         for text, cmd in (("All appearance settings", ["systemsettings", "kcm_lookandfeel"]),
                           ("Download themes", ["systemsettings", "kcm_lookandfeel"]),
@@ -641,6 +644,19 @@ class StyleWindow(Gtk.ApplicationWindow):
             kwrite("kdeglobals", "General", "accentColorFromWallpaper", "true" if on else "false")
             restart_plasmashell()
         self.work("Changing accent colour…", f)
+
+    def on_start_icon(self, on):
+        icon = "/usr/share/icons/NovaOS/scalable/apps/novaos-start.svg" if on else "start-here-kde"
+        js = ("var ps = panels(); for (var i = 0; i < ps.length; i++) { var w = ps[i].widgets();"
+              " for (var k = 0; k < w.length; k++) { var t = w[k].type;"
+              " if (t == 'org.kde.plasma.kickoff' || t == 'org.kde.plasma.kicker' ||"
+              " t == 'org.kde.plasma.kickerdash') { w[k].currentConfigGroup = ['General'];"
+              " w[k].writeConfig('icon', '%s'); } } }" % icon)
+
+        def f():
+            kwrite("novaosrc", "Start", "NovaIcon", "true" if on else "false")
+            shell_script(js)
+        self.work("Changing the Start button…", f)
 
     def on_plasma_theme(self, combo):
         v = combo.get_active_id()

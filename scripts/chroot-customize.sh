@@ -81,7 +81,11 @@ fi
 [ -n "$SHELLWP" ] && command -v convert >/dev/null && \
 	convert "$SHELLWP" -resize 600x338^ -gravity center -extent 600x338 \
 	/usr/share/plasma/look-and-feel/org.novaos.desktop/contents/previews/preview.png 2>/dev/null || true
-for t in NovaOS NovaOS-Dark Papirus Papirus-Dark; do gtk-update-icon-cache -f -t "/usr/share/icons/$t" || true; done
+# NovaOS's own icons also in hicolor, the fallback of every icon theme, so the
+# Start button and NovaOS apps keep their icons with any icon theme.
+mkdir -p /usr/share/icons/hicolor/scalable/apps
+cp -f /usr/share/icons/NovaOS/scalable/apps/novaos*.svg /usr/share/icons/hicolor/scalable/apps/
+for t in NovaOS NovaOS-Dark Papirus Papirus-Dark hicolor; do gtk-update-icon-cache -f -t "/usr/share/icons/$t" || true; done
 glib-compile-schemas /usr/share/glib-2.0/schemas
 fc-cache -f >/dev/null
 
@@ -126,6 +130,14 @@ if [ -n "$BROWSER_DESKTOP" ] && [ "$BROWSER_DESKTOP" != firefox.desktop ]; then
 		"/usr/local/share/applications/$BROWSER_DESKTOP"
 fi
 rename_app org.kde.discover.desktop "App Store"
+# The App Store is NovaOS's own Nova Store (Discover stays installed as plasma-discover).
+if [ -f /usr/local/share/applications/org.kde.discover.desktop ]; then
+	sed -i -e 's#^Exec=.*#Exec=nova-store#' -e 's#^Icon=.*#Icon=novaos-store#' -e '/^TryExec=/d' \
+		-e '/^DBusActivatable=/d' -e '/^X-DBUS-/d' -e 's#^GenericName=.*#GenericName=Apps and games#' \
+		-e '/^Actions=/d' -e '/^MimeType=/d' -e '/^\[Desktop Action/,$d' /usr/local/share/applications/org.kde.discover.desktop
+	grep -q '^StartupWMClass=' /usr/local/share/applications/org.kde.discover.desktop || \
+		echo 'StartupWMClass=novaos-store' >> /usr/local/share/applications/org.kde.discover.desktop
+fi
 rename_app libreoffice-writer.desktop "Writer (Word documents)"
 rename_app libreoffice-impress.desktop "Impress (PowerPoint slides)"
 rename_app libreoffice-calc.desktop "Calc (Excel spreadsheets)"
@@ -227,6 +239,8 @@ if command -v flatpak >/dev/null 2>&1; then
 		flatpak remote-add --system --if-not-exists flathub /tmp/flathub.flatpakrepo || true
 		mkdir -p /etc/flatpak/remotes.d
 		cp /tmp/flathub.flatpakrepo /etc/flatpak/remotes.d/flathub.flatpakrepo
+		# App list for the App Store, so it works straight away.
+		flatpak update --appstream flathub || echo "WARNING: no Flathub app list"
 	else
 		echo "WARNING: could not download the Flathub description (offline build)"
 	fi

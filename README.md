@@ -62,7 +62,7 @@ Retina Mode doubles the pixels, so only use it with graphics acceleration on.
 | You want | NovaOS app |
 |---|---|
 | Browse the web | **Firefox** (Mozilla's official build), with video codecs. Chromium and others are in the App Store |
-| Install apps & games | **App Store** — KDE Discover with Ubuntu apps **and Flathub** (thousands of apps and games) |
+| Install apps & games | **App Store** (Nova Store, NovaOS's own) — thousands of Flathub apps and games for your processor, one click to install, open, update or remove |
 | Word / PowerPoint / Excel | **Writer**, **Impress**, **Calc** (LibreOffice; open and save .docx, .pptx, .xlsx) |
 | Paint | **Paint** (KolourPaint) |
 | Files | **Files** (Dolphin) |

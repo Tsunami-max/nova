@@ -12,7 +12,7 @@ var kickoff = panel.addWidget("org.kde.plasma.kickoff");
 kickoff.currentConfigGroup = ["Shortcuts"];
 kickoff.writeConfig("global", "Alt+F1");
 kickoff.currentConfigGroup = ["General"];
-kickoff.writeConfig("icon", "novaos-start");
+kickoff.writeConfig("icon", "/usr/share/icons/NovaOS/scalable/apps/novaos-start.svg");
 kickoff.writeConfig("favorites", [
     "preferred://browser",
     "libreoffice-writer.desktop",
